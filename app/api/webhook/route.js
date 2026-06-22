@@ -3,47 +3,45 @@ import prisma from "@/lib/prisma";
 
 const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
 
-async function getGeminiReply(userMessage, conversationHistory) {
-  const contents = [
+async function getGroqReply(userMessage, conversationHistory) {
+  const messages = [
     {
-      role: "user",
-      parts: [
-        {
-          text: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng graphic design, social media management, at digital marketing services para sa mga businesses.
+      role: "system",
+      content: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng graphic design, social media management, at digital marketing services para sa mga businesses.
 
 Sundin ang mga rules na ito:
 - Huwag mag-mention na ikaw ay AI o bot — parang tao ka talaga.
 - I-detect ang language ng customer — kung Bisaya mag-Bisaya ka, kung Tagalog mag-Tagalog, kung English mag-English.
-- Kung "hi", "hello", "hoy", "kumusta", "uy" o katulad ang message — mag-greet back ng masaya at itanong kung ano ang maitutulong mo.
+- Kung "hi", "hello", "hoy", "kumusta", "uy", "naa ba mo" o katulad ang message — mag-greet back ng masaya at itanong kung ano ang maitutulong mo.
 - Kung nagtatanong ng services o presyo — ipaliwanag ang graphic design, social media management, at digital marketing services.
 - Kung interesado sila — subukang kunin ang kanilang pangalan at contact number.
 - Maging masaya, friendly, natural, at helpful lagi.
 - Huwag mag-reply ng mahabang paragraph — short and natural lang tulad ng totoong chat.`,
-        },
-      ],
-    },
-    {
-      role: "model",
-      parts: [{ text: "Sige, handa na ko! Mag-iingat sa pagiging natural at friendly sa bawat customer." }],
     },
     ...conversationHistory,
     {
       role: "user",
-      parts: [{ text: userMessage }],
+      content: userMessage,
     },
   ];
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents }),
-    }
-  );
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "llama3-8b-8192",
+      messages,
+      max_tokens: 200,
+      temperature: 0.8,
+    }),
+  });
+
   const data = await response.json();
   return (
-    data.candidates?.[0]?.content?.parts?.[0]?.text ||
+    data.choices?.[0]?.message?.content ||
     "Salamat sa iyong message! Sandali lang ha. 😊"
   );
 }
@@ -86,10 +84,10 @@ export async function POST(request) {
         take: 10,
       });
 
-      const conversationHistory = previousActivities.flatMap((activity) => [
-        { role: "user", parts: [{ text: activity.note }] },
-        { role: "model", parts: [{ text: activity.aiReply || "" }] },
-      ]);
+      const conversationHistory = previousActivities.map((activity) => ([
+        { role: "user", content: activity.note },
+        { role: "assistant", content: activity.aiReply || "" },
+      ])).flat();
 
       try {
         await prisma.lead.upsert({
@@ -106,7 +104,7 @@ export async function POST(request) {
         console.error("Error saving lead:", err);
       }
 
-      const aiReply = await getGeminiReply(messageText, conversationHistory);
+      const aiReply = await getGroqReply(messageText, conversationHistory);
 
       await prisma.activity.create({
         data: {
