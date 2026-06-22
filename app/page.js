@@ -32,7 +32,10 @@ export default function Dashboard() {
 
   const openMessenger = (lead) => {
     if (lead.source === "facebook") {
-      window.open(`https://business.facebook.com/latest/inbox/all/?asset_id=16787784839106037&selected_item_id=${lead.id}`, "_blank");
+      window.open(
+        `https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=16787784839106037&threadID=${lead.id}`,
+        "_blank"
+      );
     }
   };
 
