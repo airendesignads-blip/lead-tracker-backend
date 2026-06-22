@@ -6,25 +6,30 @@ const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
 async function getGeminiReply(userMessage, conversationHistory) {
   const contents = [
     {
+      role: "user",
       parts: [
         {
-          text: `Ikaw ay isang friendly customer service assistant ng Ai-ren Design Ads. 
-Sumagot sa Tagalog o English depende sa message ng customer. 
-Maging natural, helpful, at parang tao talaga ang sumasagot — tulad ng isang salesperson.
-Huwag mag-mention na ikaw ay AI.
-Tandaan ang buong conversation at mag-follow up kung kailangan.`,
+          text: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng graphic design, social media management, at digital marketing services para sa mga businesses.
+
+Sundin ang mga rules na ito:
+- Huwag mag-mention na ikaw ay AI o bot — parang tao ka talaga.
+- I-detect ang language ng customer — kung Bisaya mag-Bisaya ka, kung Tagalog mag-Tagalog, kung English mag-English.
+- Kung "hi", "hello", "hoy", "kumusta", "uy" o katulad ang message — mag-greet back ng masaya at itanong kung ano ang maitutulong mo.
+- Kung nagtatanong ng services o presyo — ipaliwanag ang graphic design, social media management, at digital marketing services.
+- Kung interesado sila — subukang kunin ang kanilang pangalan at contact number.
+- Maging masaya, friendly, natural, at helpful lagi.
+- Huwag mag-reply ng mahabang paragraph — short and natural lang tulad ng totoong chat.`,
         },
       ],
-      role: "user",
     },
     {
-      parts: [{ text: "Okay! Handa na ako tumulong sa mga customers. 😊" }],
       role: "model",
+      parts: [{ text: "Sige, handa na ko! Mag-iingat sa pagiging natural at friendly sa bawat customer." }],
     },
     ...conversationHistory,
     {
-      parts: [{ text: userMessage }],
       role: "user",
+      parts: [{ text: userMessage }],
     },
   ];
 
@@ -39,7 +44,7 @@ Tandaan ang buong conversation at mag-follow up kung kailangan.`,
   const data = await response.json();
   return (
     data.candidates?.[0]?.content?.parts?.[0]?.text ||
-    "Salamat sa iyong message! Sasagot kami sa inyo agad. 😊"
+    "Salamat sa iyong message! Sandali lang ha. 😊"
   );
 }
 
@@ -65,6 +70,9 @@ export async function POST(request) {
 
     const senderId = event.sender?.id;
     const messageText = event.message?.text;
+    const isEcho = event.message?.is_echo;
+
+    if (isEcho) continue;
 
     if (senderId && messageText) {
       const profile = await getMessengerProfile(senderId);
@@ -72,20 +80,17 @@ export async function POST(request) {
         ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
         : "Facebook Lead";
 
-      // I-get ang last 10 messages para sa conversation history
       const previousActivities = await prisma.activity.findMany({
         where: { leadId: senderId, type: "message" },
         orderBy: { createdAt: "asc" },
         take: 10,
       });
 
-      // I-convert sa Gemini conversation format
       const conversationHistory = previousActivities.flatMap((activity) => [
         { role: "user", parts: [{ text: activity.note }] },
         { role: "model", parts: [{ text: activity.aiReply || "" }] },
       ]);
 
-      // I-upsert ang lead
       try {
         await prisma.lead.upsert({
           where: { id: senderId },
@@ -101,10 +106,8 @@ export async function POST(request) {
         console.error("Error saving lead:", err);
       }
 
-      // Kumuha ng AI reply na may history
       const aiReply = await getGeminiReply(messageText, conversationHistory);
 
-      // I-save ang message at AI reply
       await prisma.activity.create({
         data: {
           leadId: senderId,
