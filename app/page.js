@@ -19,20 +19,20 @@ export default function Dashboard() {
 
   const getReplyStatus = (lead) => {
     const activities = lead.activities || [];
-    if (activities.length === 0) return { label: "Walang message", color: "#9ca3af", dot: "⚪" };
+    if (activities.length === 0) return { label: "No Message", color: "#9ca3af" };
     const last = activities[activities.length - 1];
-    if (!last.aiReply) return { label: "Hindi pa nareplyan", color: "#ef4444", dot: "🔴" };
+    if (!last.aiReply) return { label: "Pending Reply", color: "#ef4444" };
     const lastMessageTime = new Date(last.createdAt);
     const hasNewMessage = activities.some(
       (a) => !a.aiReply && new Date(a.createdAt) > lastMessageTime
     );
-    if (hasNewMessage) return { label: "Nag-message ulit!", color: "#f59e0b", dot: "🟡" };
-    return { label: "Nareplyan na", color: "#22c55e", dot: "🟢" };
+    if (hasNewMessage) return { label: "New Message!", color: "#f59e0b" };
+    return { label: "Replied", color: "#22c55e" };
   };
 
   const openMessenger = (lead) => {
     if (lead.source === "facebook") {
-      window.open(`https://www.facebook.com/messages/t/${lead.id}`, "_blank");
+      window.open(`https://business.facebook.com/latest/inbox/direct/messenger/?selected_item_id=${lead.id}`, "_blank");
     }
   };
 
@@ -45,44 +45,46 @@ export default function Dashboard() {
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
           <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-              <th style={{ padding: "8px" }}>Name</th>
-              <th style={{ padding: "8px" }}>Email</th>
-              <th style={{ padding: "8px" }}>Source</th>
-              <th style={{ padding: "8px" }}>Stage</th>
-              <th style={{ padding: "8px" }}>Heat</th>
-              <th style={{ padding: "8px" }}>Reply Status</th>
-              <th style={{ padding: "8px" }}>Created</th>
+            <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd", background: "#f9fafb" }}>
+              <th style={{ padding: "10px" }}>Name</th>
+              <th style={{ padding: "10px" }}>Email</th>
+              <th style={{ padding: "10px" }}>Source</th>
+              <th style={{ padding: "10px" }}>Stage</th>
+              <th style={{ padding: "10px" }}>Heat</th>
+              <th style={{ padding: "10px" }}>Reply Status</th>
+              <th style={{ padding: "10px" }}>Created</th>
             </tr>
           </thead>
           <tbody>
             {leads.map((lead) => {
               const status = getReplyStatus(lead);
+              const stage = lead.stage === "Bagong Lead" ? "New Lead" : lead.stage;
               return (
                 <tr key={lead.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "8px", fontWeight: "bold", cursor: "pointer", color: "#3b82f6" }}
+                  <td
+                    style={{ padding: "10px", fontWeight: "bold", cursor: "pointer", color: "#3b82f6" }}
                     onClick={() => openMessenger(lead)}>
                     {lead.name}
                   </td>
-                  <td style={{ padding: "8px" }}>{lead.email || "-"}</td>
-                  <td style={{ padding: "8px" }}>{lead.source}</td>
-                  <td style={{ padding: "8px" }}>{lead.stage}</td>
-                  <td style={{ padding: "8px", color: heatColor[lead.heat] || "#000" }}>
+                  <td style={{ padding: "10px" }}>{lead.email || "-"}</td>
+                  <td style={{ padding: "10px" }}>{lead.source}</td>
+                  <td style={{ padding: "10px" }}>{stage}</td>
+                  <td style={{ padding: "10px", color: heatColor[lead.heat] || "#000", textTransform: "capitalize" }}>
                     {lead.heat}
                   </td>
-                  <td style={{ padding: "8px" }}>
+                  <td style={{ padding: "10px" }}>
                     <span style={{
                       background: status.color,
                       color: "white",
-                      padding: "4px 10px",
+                      padding: "4px 12px",
                       borderRadius: "999px",
                       fontSize: "12px",
                       fontWeight: "bold"
                     }}>
-                      {status.dot} {status.label}
+                      {status.label}
                     </span>
                   </td>
-                  <td style={{ padding: "8px" }}>
+                  <td style={{ padding: "10px" }}>
                     {new Date(lead.createdAt).toLocaleDateString()}
                   </td>
                 </tr>
