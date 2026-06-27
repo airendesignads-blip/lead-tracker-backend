@@ -6,6 +6,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [activeTab, setActiveTab] = useState("active");
+  const [updatingId, setUpdatingId] = useState(null);
 
   const fetchLeads = () => {
     fetch("/api/leads")
@@ -49,21 +50,31 @@ export default function Dashboard() {
   };
 
   const markAsDone = async (leadId) => {
-    await fetch(`/api/leads/${leadId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stage: "Done" }),
-    });
-    fetchLeads();
+    setUpdatingId(leadId);
+    try {
+      await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: "Done" }),
+      });
+      await fetchLeads();
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const markAsActive = async (leadId) => {
-    await fetch(`/api/leads/${leadId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stage: "Bagong Lead" }),
-    });
-    fetchLeads();
+    setUpdatingId(leadId);
+    try {
+      await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: "Bagong Lead" }),
+      });
+      await fetchLeads();
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const filteredLeads = leads.filter((lead) =>
@@ -153,6 +164,7 @@ export default function Dashboard() {
             {filteredLeads.map((lead) => {
               const status = getReplyStatus(lead);
               const stage = lead.stage === "Bagong Lead" ? "New Lead" : lead.stage;
+              const isUpdating = updatingId === lead.id;
               return (
                 <tr key={lead.id} style={{ borderBottom: "1px solid #eee" }}>
                   <td
@@ -188,34 +200,38 @@ export default function Dashboard() {
                     {activeTab === "active" ? (
                       <button
                         onClick={() => markAsDone(lead.id)}
+                        disabled={isUpdating}
                         style={{
                           padding: "6px 12px",
-                          background: "#22c55e",
+                          background: isUpdating ? "#9ca3af" : "#22c55e",
                           color: "white",
                           border: "none",
                           borderRadius: 6,
-                          cursor: "pointer",
+                          cursor: isUpdating ? "not-allowed" : "pointer",
                           fontSize: 12,
                           fontWeight: "bold",
+                          minWidth: "90px",
                         }}
                       >
-                        Mark Done
+                        {isUpdating ? "Saving..." : "Mark Done"}
                       </button>
                     ) : (
                       <button
                         onClick={() => markAsActive(lead.id)}
+                        disabled={isUpdating}
                         style={{
                           padding: "6px 12px",
-                          background: "#6b7280",
+                          background: isUpdating ? "#9ca3af" : "#6b7280",
                           color: "white",
                           border: "none",
                           borderRadius: 6,
-                          cursor: "pointer",
+                          cursor: isUpdating ? "not-allowed" : "pointer",
                           fontSize: 12,
                           fontWeight: "bold",
+                          minWidth: "90px",
                         }}
                       >
-                        Reopen
+                        {isUpdating ? "Saving..." : "Reopen"}
                       </button>
                     )}
                   </td>
