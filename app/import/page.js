@@ -15,7 +15,7 @@ export default function ImportLeadsPage() {
       if (res.ok) {
         setResult({ type: "success", message: `Tagumpay! ${data.imported} conversations na-import.` });
       } else {
-        setResult({ type: "error", message: data.error || "May error." });
+setResult({ type: "error", message: (data.error || "May error.") + " | DETAILS: " + JSON.stringify(data.details || data) });
       }
     } catch (err) {
       setResult({ type: "error", message: "Hindi ma-connect sa server." });
