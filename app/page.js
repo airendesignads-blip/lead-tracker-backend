@@ -4,15 +4,23 @@ import { useEffect, useState } from "react";
 export default function Dashboard() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  useEffect(() => {
+  const fetchLeads = () => {
     fetch("/api/leads")
       .then((res) => res.json())
       .then((data) => {
         setLeads(data);
         setLoading(false);
+        setLastUpdated(new Date());
       })
       .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchLeads();
+    const interval = setInterval(fetchLeads, 5000); // auto-refresh every 5 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const heatColor = { hot: "#ef4444", warm: "#f59e0b", cold: "#3b82f6" };
@@ -41,8 +49,31 @@ export default function Dashboard() {
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1>Lead Tracker CRM</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <h1>Lead Tracker CRM</h1>
+        {lastUpdated && (
+          <span style={{ fontSize: "12px", color: "#888" }}>
+            Live • Updated {lastUpdated.toLocaleTimeString()}
+          </span>
+        )}
+      </div>
       <p>Total Leads: {leads.length}</p>
+      <a
+        href="/import"
+        style={{
+          display: "inline-block",
+          marginBottom: "1rem",
+          padding: "8px 16px",
+          background: "#16a34a",
+          color: "white",
+          borderRadius: 6,
+          textDecoration: "none",
+          fontWeight: "bold",
+          fontSize: 14,
+        }}
+      >
+        + Import Old Leads
+      </a>
       {loading ? (
         <p>Loading...</p>
       ) : (
