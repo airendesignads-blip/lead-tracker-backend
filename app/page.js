@@ -33,7 +33,7 @@ export default function Dashboard() {
   const openMessenger = (lead) => {
     if (lead.source === "facebook") {
       window.open(
-        `https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=16787784839106037&threadID=${lead.id}`,
+        `https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${lead.id}`,
         "_blank"
       );
     }
@@ -66,7 +66,8 @@ export default function Dashboard() {
                 <tr key={lead.id} style={{ borderBottom: "1px solid #eee" }}>
                   <td
                     style={{ padding: "10px", fontWeight: "bold", cursor: "pointer", color: "#3b82f6" }}
-                    onClick={() => openMessenger(lead)}>
+                    onClick={() => openMessenger(lead)}
+                  >
                     {lead.name}
                   </td>
                   <td style={{ padding: "10px" }}>{lead.email || "-"}</td>
@@ -76,14 +77,16 @@ export default function Dashboard() {
                     {lead.heat}
                   </td>
                   <td style={{ padding: "10px" }}>
-                    <span style={{
-                      background: status.color,
-                      color: "white",
-                      padding: "4px 12px",
-                      borderRadius: "999px",
-                      fontSize: "12px",
-                      fontWeight: "bold"
-                    }}>
+                    <span
+                      style={{
+                        background: status.color,
+                        color: "white",
+                        padding: "4px 12px",
+                        borderRadius: "999px",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                      }}
+                    >
                       {status.label}
                     </span>
                   </td>
