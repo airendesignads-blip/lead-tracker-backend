@@ -5,6 +5,7 @@ export default function Dashboard() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [activeTab, setActiveTab] = useState("active");
 
   const fetchLeads = () => {
     fetch("/api/leads")
@@ -19,7 +20,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchLeads();
-    const interval = setInterval(fetchLeads, 5000); // auto-refresh every 5 seconds
+    const interval = setInterval(fetchLeads, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -47,6 +48,28 @@ export default function Dashboard() {
     }
   };
 
+  const markAsDone = async (leadId) => {
+    await fetch(`/api/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: "Done" }),
+    });
+    fetchLeads();
+  };
+
+  const markAsActive = async (leadId) => {
+    await fetch(`/api/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: "Bagong Lead" }),
+    });
+    fetchLeads();
+  };
+
+  const filteredLeads = leads.filter((lead) =>
+    activeTab === "done" ? lead.stage === "Done" : lead.stage !== "Done"
+  );
+
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -58,11 +81,13 @@ export default function Dashboard() {
         )}
       </div>
       <p>Total Leads: {leads.length}</p>
-      <a
+
+      
         href="/import"
         style={{
           display: "inline-block",
           marginBottom: "1rem",
+          marginRight: "8px",
           padding: "8px 16px",
           background: "#16a34a",
           color: "white",
@@ -74,6 +99,40 @@ export default function Dashboard() {
       >
         + Import Old Leads
       </a>
+
+      <div style={{ display: "flex", gap: "8px", marginTop: "1rem", marginBottom: "1rem", borderBottom: "2px solid #eee" }}>
+        <button
+          onClick={() => setActiveTab("active")}
+          style={{
+            padding: "10px 20px",
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            fontWeight: "bold",
+            fontSize: 15,
+            color: activeTab === "active" ? "#2563eb" : "#888",
+            borderBottom: activeTab === "active" ? "3px solid #2563eb" : "3px solid transparent",
+          }}
+        >
+          Active Leads ({leads.filter((l) => l.stage !== "Done").length})
+        </button>
+        <button
+          onClick={() => setActiveTab("done")}
+          style={{
+            padding: "10px 20px",
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            fontWeight: "bold",
+            fontSize: 15,
+            color: activeTab === "done" ? "#2563eb" : "#888",
+            borderBottom: activeTab === "done" ? "3px solid #2563eb" : "3px solid transparent",
+          }}
+        >
+          Done ({leads.filter((l) => l.stage === "Done").length})
+        </button>
+      </div>
+
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -87,10 +146,11 @@ export default function Dashboard() {
               <th style={{ padding: "10px" }}>Heat</th>
               <th style={{ padding: "10px" }}>Reply Status</th>
               <th style={{ padding: "10px" }}>Created</th>
+              <th style={{ padding: "10px" }}>Action</th>
             </tr>
           </thead>
           <tbody>
-            {leads.map((lead) => {
+            {filteredLeads.map((lead) => {
               const status = getReplyStatus(lead);
               const stage = lead.stage === "Bagong Lead" ? "New Lead" : lead.stage;
               return (
@@ -123,6 +183,41 @@ export default function Dashboard() {
                   </td>
                   <td style={{ padding: "10px" }}>
                     {new Date(lead.createdAt).toLocaleDateString()}
+                  </td>
+                  <td style={{ padding: "10px" }}>
+                    {activeTab === "active" ? (
+                      <button
+                        onClick={() => markAsDone(lead.id)}
+                        style={{
+                          padding: "6px 12px",
+                          background: "#22c55e",
+                          color: "white",
+                          border: "none",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          fontSize: 12,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Mark Done
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => markAsActive(lead.id)}
+                        style={{
+                          padding: "6px 12px",
+                          background: "#6b7280",
+                          color: "white",
+                          border: "none",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          fontSize: 12,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Reopen
+                      </button>
+                    )}
                   </td>
                 </tr>
               );
