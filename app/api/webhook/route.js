@@ -7,7 +7,7 @@ async function getGroqReply(userMessage, conversationHistory) {
   const messages = [
     {
       role: "system",
-      content: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng graphic design, social media management, at digital marketing services para sa mga businesses.
+      content: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng graphic design, social media management, at
 
 Sundin ang mga rules na ito:
 - Huwag mag-mention na ikaw ay AI o bot — parang tao ka talaga.
@@ -84,15 +84,15 @@ export async function POST(request) {
         take: 10,
       });
 
-      const conversationHistory = previousActivities.map((activity) => ([
+      const conversationHistory = previousActivities.map((activity) => [
         { role: "user", content: activity.note },
         { role: "assistant", content: activity.aiReply || "" },
-      ])).flat();
+      ]).flat();
 
       try {
         await prisma.lead.upsert({
           where: { id: senderId },
-          update: { updatedAt: new Date() },
+          update: { updatedAt: new Date(), stage: "Bagong Lead" },
           create: {
             id: senderId,
             name,
