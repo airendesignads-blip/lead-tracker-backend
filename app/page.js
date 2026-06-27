@@ -82,7 +82,7 @@ export default function Dashboard() {
       </div>
       <p>Total Leads: {leads.length}</p>
 
-      
+      <a
         href="/import"
         style={{
           display: "inline-block",
