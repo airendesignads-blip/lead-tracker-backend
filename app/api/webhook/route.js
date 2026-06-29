@@ -7,7 +7,7 @@ async function getGroqReply(userMessage, conversationHistory) {
   const messages = [
     {
       role: "system",
-      content: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng graphic design, social media management, at
+      content: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng graphic design, social media management, at digital marketing.
 
 Sundin ang mga rules na ito:
 - Huwag mag-mention na ikaw ay AI o bot — parang tao ka talaga.
@@ -19,10 +19,7 @@ Sundin ang mga rules na ito:
 - Huwag mag-reply ng mahabang paragraph — short and natural lang tulad ng totoong chat.`,
     },
     ...conversationHistory,
-    {
-      role: "user",
-      content: userMessage,
-    },
+    { role: "user", content: userMessage },
   ];
 
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -40,10 +37,19 @@ Sundin ang mga rules na ito:
   });
 
   const data = await response.json();
-  return (
-    data.choices?.[0]?.message?.content ||
-    "Salamat sa iyong message! Sandali lang ha. 😊"
-  );
+  return data.choices?.[0]?.message?.content || "Salamat sa iyong message! Sandali lang ha. 😊";
+}
+
+async function getPostTitle(postId) {
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/${postId}?fields=message,story&access_token=${process.env.FB_PAGE_ACCESS_TOKEN}`
+    );
+    const data = await res.json();
+    return data.message?.slice(0, 80) || data.story || "Facebook Post";
+  } catch {
+    return "Facebook Post";
+  }
 }
 
 export async function GET(request) {
@@ -63,60 +69,105 @@ export async function POST(request) {
   if (body.object !== "page") return new Response("Not a page event", { status: 404 });
 
   for (const entry of body.entry || []) {
+
+    // ✅ MESSENGER MESSAGES
     const event = entry.messaging?.[0];
-    if (!event) continue;
+    if (event) {
+      const senderId = event.sender?.id;
+      const messageText = event.message?.text;
+      const isEcho = event.message?.is_echo;
 
-    const senderId = event.sender?.id;
-    const messageText = event.message?.text;
-    const isEcho = event.message?.is_echo;
+      if (!isEcho && senderId && messageText) {
+        const profile = await getMessengerProfile(senderId);
+        const name = profile
+          ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
+          : "Facebook Lead";
 
-    if (isEcho) continue;
-
-    if (senderId && messageText) {
-      const profile = await getMessengerProfile(senderId);
-      const name = profile
-        ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
-        : "Facebook Lead";
-
-      const previousActivities = await prisma.activity.findMany({
-        where: { leadId: senderId, type: "message" },
-        orderBy: { createdAt: "asc" },
-        take: 10,
-      });
-
-      const conversationHistory = previousActivities.map((activity) => [
-        { role: "user", content: activity.note },
-        { role: "assistant", content: activity.aiReply || "" },
-      ]).flat();
-
-      try {
-        await prisma.lead.upsert({
-          where: { id: senderId },
-          update: { updatedAt: new Date(), stage: "Bagong Lead" },
-          create: {
-            id: senderId,
-            name,
-            source: "facebook",
-            activities: { create: { type: "message", note: messageText } },
-          },
+        const previousActivities = await prisma.activity.findMany({
+          where: { leadId: senderId, type: "message" },
+          orderBy: { createdAt: "asc" },
+          take: 10,
         });
-      } catch (err) {
-        console.error("Error saving lead:", err);
+
+        const conversationHistory = previousActivities.map((activity) => [
+          { role: "user", content: activity.note },
+          { role: "assistant", content: activity.aiReply || "" },
+        ]).flat();
+
+        try {
+          await prisma.lead.upsert({
+            where: { id: senderId },
+            update: { updatedAt: new Date(), stage: "Bagong Lead" },
+            create: {
+              id: senderId,
+              name,
+              source: "facebook",
+              activities: { create: { type: "message", note: messageText } },
+            },
+          });
+        } catch (err) {
+          console.error("Error saving lead:", err);
+        }
+
+        const aiReply = await getGroqReply(messageText, conversationHistory);
+
+        await prisma.activity.create({
+          data: { leadId: senderId, type: "message", note: messageText, aiReply },
+        });
+
+        await sendMessengerReply(senderId, aiReply);
       }
+    }
 
-      const aiReply = await getGroqReply(messageText, conversationHistory);
+    // ✅ FACEBOOK POST COMMENTS
+    for (const change of entry.changes || []) {
+      if (change.field === "feed" && change.value?.item === "comment") {
+        const commentData = change.value;
+        const commenterId = commentData.sender_id?.toString();
+        const commenterName = commentData.sender_name || "Facebook Commenter";
+        const commentText = commentData.message || "";
+        const postId = commentData.post_id || "";
+        const commentId = commentData.comment_id || "";
 
-      await prisma.activity.create({
-        data: {
-          leadId: senderId,
-          type: "message",
-          note: messageText,
-          aiReply: aiReply,
-        },
-      });
+        if (!commenterId || !commentText) continue;
 
-      await sendMessengerReply(senderId, aiReply);
+        // Kunin ang post title
+        const postTitle = await getPostTitle(postId);
+
+        // I-save ang commenter bilang lead
+        const leadId = `fb_comment_${commenterId}`;
+
+        try {
+          await prisma.lead.upsert({
+            where: { id: leadId },
+            update: {
+              updatedAt: new Date(),
+              stage: "Bagong Lead",
+              comment: commentText,
+              postId: postId,
+              postTitle: postTitle,
+            },
+            create: {
+              id: leadId,
+              name: commenterName,
+              source: "facebook",
+              postId: postId,
+              postTitle: postTitle,
+              comment: commentText,
+              activities: {
+                create: {
+                  type: "comment",
+                  note: `Commented on "${postTitle}": ${commentText}`,
+                },
+              },
+            },
+          });
+        } catch (err) {
+          console.error("Error saving comment lead:", err);
+        }
+      }
     }
   }
+
   return new Response("EVENT_RECEIVED", { status: 200 });
 }
