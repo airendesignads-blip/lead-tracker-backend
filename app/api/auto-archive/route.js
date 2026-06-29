@@ -5,8 +5,11 @@ export async function POST() {
   const oneDayAgo = new Date();
   oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
+  const twoDaysAgo = new Date();
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
   const activeLeads = await prisma.lead.findMany({
-    where: { stage: "New Lead" },
+    where: { stage: { notIn: ["Facebook Done", "Email Done"] } },
     include: { activities: true },
   });
 
@@ -15,20 +18,23 @@ export async function POST() {
     if (activities.length === 0) return false;
 
     const last = activities[activities.length - 1];
-    const isReplied = last.aiReply === true;
-    const isOld = new Date(last.createdAt) < oneDayAgo;
+    if (!last.aiReply) return false;
 
-    return isReplied && isOld;
+    const lastTime = new Date(last.createdAt);
+
+    if (lead.source === "facebook") return lastTime < oneDayAgo;
+    if (lead.source === "email") return lastTime < twoDaysAgo;
+
+    return false;
   });
 
-  const ids = toArchive.map((l) => l.id);
-
-  if (ids.length > 0) {
-    await prisma.lead.updateMany({
-      where: { id: { in: ids } },
-      data: { stage: "Done" },
+  for (const lead of toArchive) {
+    const newStage = lead.source === "facebook" ? "Facebook Done" : "Email Done";
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: { stage: newStage },
     });
   }
 
-  return NextResponse.json({ archived: ids.length });
+  return NextResponse.json({ archived: toArchive.length });
 }
