@@ -93,7 +93,6 @@ export default function Dashboard() {
         )}
       </div>
       <p>Total Leads: {leads.length}</p>
-
       
         href="/import"
         style={{
@@ -111,8 +110,15 @@ export default function Dashboard() {
       >
         + Import Old Leads
       </a>
-
-      <div style={{ display: "flex", gap: "8px", marginTop: "1rem", marginBottom: "1rem", borderBottom: "2px solid #eee" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          marginTop: "1rem",
+          marginBottom: "1rem",
+          borderBottom: "2px solid #eee",
+        }}
+      >
         <button
           onClick={() => setActiveTab("active")}
           style={{
@@ -123,7 +129,8 @@ export default function Dashboard() {
             fontWeight: "bold",
             fontSize: 15,
             color: activeTab === "active" ? "#2563eb" : "#888",
-            borderBottom: activeTab === "active" ? "3px solid #2563eb" : "3px solid transparent",
+            borderBottom:
+              activeTab === "active" ? "3px solid #2563eb" : "3px solid transparent",
           }}
         >
           Active Leads ({leads.filter((l) => l.stage !== "Done").length})
@@ -138,19 +145,25 @@ export default function Dashboard() {
             fontWeight: "bold",
             fontSize: 15,
             color: activeTab === "done" ? "#2563eb" : "#888",
-            borderBottom: activeTab === "done" ? "3px solid #2563eb" : "3px solid transparent",
+            borderBottom:
+              activeTab === "done" ? "3px solid #2563eb" : "3px solid transparent",
           }}
         >
           Done ({leads.filter((l) => l.stage === "Done").length})
         </button>
       </div>
-
       {loading ? (
         <p>Loading...</p>
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
           <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd", background: "#f9fafb" }}>
+            <tr
+              style={{
+                textAlign: "left",
+                borderBottom: "2px solid #ddd",
+                background: "#f9fafb",
+              }}
+            >
               <th style={{ padding: "10px" }}>Name</th>
               <th style={{ padding: "10px" }}>Email</th>
               <th style={{ padding: "10px" }}>Source</th>
@@ -169,7 +182,12 @@ export default function Dashboard() {
               return (
                 <tr key={lead.id} style={{ borderBottom: "1px solid #eee" }}>
                   <td
-                    style={{ padding: "10px", fontWeight: "bold", cursor: "pointer", color: "#3b82f6" }}
+                    style={{
+                      padding: "10px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      color: "#3b82f6",
+                    }}
                     onClick={() => openMessenger(lead)}
                   >
                     {lead.name}
@@ -177,7 +195,13 @@ export default function Dashboard() {
                   <td style={{ padding: "10px" }}>{lead.email || "-"}</td>
                   <td style={{ padding: "10px" }}>{lead.source}</td>
                   <td style={{ padding: "10px" }}>{stage}</td>
-                  <td style={{ padding: "10px", color: heatColor[lead.heat] || "#000", textTransform: "capitalize" }}>
+                  <td
+                    style={{
+                      padding: "10px",
+                      color: heatColor[lead.heat] || "#000",
+                      textTransform: "capitalize",
+                    }}
+                  >
                     {lead.heat}
                   </td>
                   <td style={{ padding: "10px" }}>
