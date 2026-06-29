@@ -17,6 +17,9 @@ model Lead {
   stage         String     @default("Bagong Lead")
   heat          String     @default("warm")
   source        String     @default("manual")
+  postId        String?
+  postTitle     String?
+  comment       String?
   nextFollowUp  DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
