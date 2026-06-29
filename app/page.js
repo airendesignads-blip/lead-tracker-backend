@@ -50,13 +50,14 @@ export default function Dashboard() {
     }
   };
 
-  const markAsDone = async (leadId) => {
+  const markAsDone = async (leadId, source) => {
     setUpdatingId(leadId);
+    const stage = source === "facebook" ? "Facebook Done" : "Email Done";
     try {
       await fetch(`/api/leads/${leadId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stage: "Done" }),
+        body: JSON.stringify({ stage }),
       });
       await fetchLeads();
     } finally {
@@ -78,9 +79,25 @@ export default function Dashboard() {
     }
   };
 
-  const filteredLeads = leads.filter((lead) =>
-    activeTab === "done" ? lead.stage === "Done" : lead.stage !== "Done"
-  );
+  const doneStages = ["Facebook Done", "Email Done", "Done"];
+
+  const filteredLeads = leads.filter((lead) => {
+    if (activeTab === "active") return !doneStages.includes(lead.stage);
+    if (activeTab === "facebook-done") return lead.stage === "Facebook Done";
+    if (activeTab === "email-done") return lead.stage === "Email Done";
+    return false;
+  });
+
+  const tabStyle = (tab) => ({
+    padding: "10px 20px",
+    border: "none",
+    background: "none",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: 15,
+    color: activeTab === tab ? "#2563eb" : "#888",
+    borderBottom: activeTab === tab ? "3px solid #2563eb" : "3px solid transparent",
+  });
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
@@ -93,63 +110,16 @@ export default function Dashboard() {
         )}
       </div>
       <p>Total Leads: {leads.length}</p>
-      <a
-        href="/import"
-        style={{
-          display: "inline-block",
-          marginBottom: "1rem",
-          marginRight: "8px",
-          padding: "8px 16px",
-          background: "#16a34a",
-          color: "white",
-          borderRadius: 6,
-          textDecoration: "none",
-          fontWeight: "bold",
-          fontSize: 14,
-        }}
-      >
-        + Import Old Leads
-      </a>
-      <div
-        style={{
-          display: "flex",
-          gap: "8px",
-          marginTop: "1rem",
-          marginBottom: "1rem",
-          borderBottom: "2px solid #eee",
-        }}
-      >
-        <button
-          onClick={() => setActiveTab("active")}
-          style={{
-            padding: "10px 20px",
-            border: "none",
-            background: "none",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: 15,
-            color: activeTab === "active" ? "#2563eb" : "#888",
-            borderBottom:
-              activeTab === "active" ? "3px solid #2563eb" : "3px solid transparent",
-          }}
-        >
-          Active Leads ({leads.filter((l) => l.stage !== "Done").length})
+      <a href="/import" style={{ display: "inline-block", marginBottom: "1rem", marginRight: "8px", padding: "8px 16px", background: "#16a34a", color: "white", borderRadius: 6, textDecoration: "none", fontWeight: "bold", fontSize: 14 }}>+ Import Old Leads</a>
+      <div style={{ display: "flex", gap: "8px", marginTop: "1rem", marginBottom: "1rem", borderBottom: "2px solid #eee" }}>
+        <button onClick={() => setActiveTab("active")} style={tabStyle("active")}>
+          Active Leads ({leads.filter((l) => !doneStages.includes(l.stage)).length})
         </button>
-        <button
-          onClick={() => setActiveTab("done")}
-          style={{
-            padding: "10px 20px",
-            border: "none",
-            background: "none",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: 15,
-            color: activeTab === "done" ? "#2563eb" : "#888",
-            borderBottom:
-              activeTab === "done" ? "3px solid #2563eb" : "3px solid transparent",
-          }}
-        >
-          Done ({leads.filter((l) => l.stage === "Done").length})
+        <button onClick={() => setActiveTab("facebook-done")} style={tabStyle("facebook-done")}>
+          Facebook Done ({leads.filter((l) => l.stage === "Facebook Done").length})
+        </button>
+        <button onClick={() => setActiveTab("email-done")} style={tabStyle("email-done")}>
+          Email Done ({leads.filter((l) => l.stage === "Email Done").length})
         </button>
       </div>
       {loading ? (
@@ -157,13 +127,7 @@ export default function Dashboard() {
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
           <thead>
-            <tr
-              style={{
-                textAlign: "left",
-                borderBottom: "2px solid #ddd",
-                background: "#f9fafb",
-              }}
-            >
+            <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd", background: "#f9fafb" }}>
               <th style={{ padding: "10px" }}>Name</th>
               <th style={{ padding: "10px" }}>Email</th>
               <th style={{ padding: "10px" }}>Source</th>
@@ -181,40 +145,17 @@ export default function Dashboard() {
               const isUpdating = updatingId === lead.id;
               return (
                 <tr key={lead.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td
-                    style={{
-                      padding: "10px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      color: "#3b82f6",
-                    }}
-                    onClick={() => openMessenger(lead)}
-                  >
+                  <td style={{ padding: "10px", fontWeight: "bold", cursor: "pointer", color: "#3b82f6" }} onClick={() => openMessenger(lead)}>
                     {lead.name}
                   </td>
                   <td style={{ padding: "10px" }}>{lead.email || "-"}</td>
                   <td style={{ padding: "10px" }}>{lead.source}</td>
                   <td style={{ padding: "10px" }}>{stage}</td>
-                  <td
-                    style={{
-                      padding: "10px",
-                      color: heatColor[lead.heat] || "#000",
-                      textTransform: "capitalize",
-                    }}
-                  >
+                  <td style={{ padding: "10px", color: heatColor[lead.heat] || "#000", textTransform: "capitalize" }}>
                     {lead.heat}
                   </td>
                   <td style={{ padding: "10px" }}>
-                    <span
-                      style={{
-                        background: status.color,
-                        color: "white",
-                        padding: "4px 12px",
-                        borderRadius: "999px",
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                      }}
-                    >
+                    <span style={{ background: status.color, color: "white", padding: "4px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: "bold" }}>
                       {status.label}
                     </span>
                   </td>
@@ -223,39 +164,11 @@ export default function Dashboard() {
                   </td>
                   <td style={{ padding: "10px" }}>
                     {activeTab === "active" ? (
-                      <button
-                        onClick={() => markAsDone(lead.id)}
-                        disabled={isUpdating}
-                        style={{
-                          padding: "6px 12px",
-                          background: isUpdating ? "#9ca3af" : "#22c55e",
-                          color: "white",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: isUpdating ? "not-allowed" : "pointer",
-                          fontSize: 12,
-                          fontWeight: "bold",
-                          minWidth: "90px",
-                        }}
-                      >
+                      <button onClick={() => markAsDone(lead.id, lead.source)} disabled={isUpdating} style={{ padding: "6px 12px", background: isUpdating ? "#9ca3af" : "#22c55e", color: "white", border: "none", borderRadius: 6, cursor: isUpdating ? "not-allowed" : "pointer", fontSize: 12, fontWeight: "bold", minWidth: "90px" }}>
                         {isUpdating ? "Saving..." : "Mark Done"}
                       </button>
                     ) : (
-                      <button
-                        onClick={() => markAsActive(lead.id)}
-                        disabled={isUpdating}
-                        style={{
-                          padding: "6px 12px",
-                          background: isUpdating ? "#9ca3af" : "#6b7280",
-                          color: "white",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: isUpdating ? "not-allowed" : "pointer",
-                          fontSize: 12,
-                          fontWeight: "bold",
-                          minWidth: "90px",
-                        }}
-                      >
+                      <button onClick={() => markAsActive(lead.id)} disabled={isUpdating} style={{ padding: "6px 12px", background: isUpdating ? "#9ca3af" : "#6b7280", color: "white", border: "none", borderRadius: 6, cursor: isUpdating ? "not-allowed" : "pointer", fontSize: 12, fontWeight: "bold", minWidth: "90px" }}>
                         {isUpdating ? "Saving..." : "Reopen"}
                       </button>
                     )}
