@@ -9,7 +9,6 @@ export async function POST() {
     return NextResponse.json({ error: "Missing FB credentials" }, { status: 500 });
   }
 
-  // Kunin ang posts ng last 30 days
   const since = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
 
   const postsRes = await fetch(
@@ -24,7 +23,6 @@ export async function POST() {
     const postTitle = post.message?.slice(0, 80) || post.story || "Facebook Post";
     const postId = post.id;
 
-    // Kunin ang comments ng bawat post
     const commentsRes = await fetch(
       `https://graph.facebook.com/v19.0/${postId}/comments?fields=id,message,from&limit=100&access_token=${accessToken}`
     );
@@ -43,18 +41,13 @@ export async function POST() {
       try {
         await prisma.lead.upsert({
           where: { id: leadId },
-          update: {
-            updatedAt: new Date(),
-            comment: commentText,
-            postId: postId,
-            postTitle: postTitle,
-          },
+          update: { updatedAt: new Date(), comment: commentText, postId, postTitle },
           create: {
             id: leadId,
             name: commenterName,
             source: "facebook",
-            postId: postId,
-            postTitle: postTitle,
+            postId,
+            postTitle,
             comment: commentText,
             activities: {
               create: {
