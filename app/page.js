@@ -5,7 +5,7 @@ export default function Dashboard() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [activeTab, setActiveTab] = useState("active");
+  const [activeTab, setActiveTab] = useState("messenger");
   const [updatingId, setUpdatingId] = useState(null);
 
   const fetchLeads = () => {
@@ -27,6 +27,7 @@ export default function Dashboard() {
   }, []);
 
   const heatColor = { hot: "#ef4444", warm: "#f59e0b", cold: "#3b82f6" };
+  const doneStages = ["Facebook Done", "Email Done", "Done"];
 
   const getReplyStatus = (lead) => {
     const activities = lead.activities || [];
@@ -79,14 +80,21 @@ export default function Dashboard() {
     }
   };
 
-  const doneStages = ["Facebook Done", "Email Done", "Done"];
+  // Messenger leads — walang postId (nagmessage sa Messenger)
+  const messengerLeads = leads.filter((l) => !l.postId && !doneStages.includes(l.stage));
+  // Comment leads — may postId (nag-comment sa post)
+  const commentLeads = leads.filter((l) => l.postId && !doneStages.includes(l.stage));
+  // Done leads
+  const fbDoneLeads = leads.filter((l) => l.stage === "Facebook Done");
+  const emailDoneLeads = leads.filter((l) => l.stage === "Email Done");
 
-  const filteredLeads = leads.filter((lead) => {
-    if (activeTab === "active") return !doneStages.includes(lead.stage);
-    if (activeTab === "facebook-done") return lead.stage === "Facebook Done";
-    if (activeTab === "email-done") return lead.stage === "Email Done";
-    return false;
-  });
+  const filteredLeads = () => {
+    if (activeTab === "messenger") return messengerLeads;
+    if (activeTab === "comments") return commentLeads;
+    if (activeTab === "facebook-done") return fbDoneLeads;
+    if (activeTab === "email-done") return emailDoneLeads;
+    return [];
+  };
 
   const tabStyle = (tab) => ({
     padding: "10px 20px",
@@ -94,7 +102,7 @@ export default function Dashboard() {
     background: "none",
     cursor: "pointer",
     fontWeight: "bold",
-    fontSize: 15,
+    fontSize: 14,
     color: activeTab === tab ? "#2563eb" : "#888",
     borderBottom: activeTab === tab ? "3px solid #2563eb" : "3px solid transparent",
   });
@@ -111,19 +119,27 @@ export default function Dashboard() {
       </div>
       <p>Total Leads: {leads.length}</p>
       <a href="/import" style={{ display: "inline-block", marginBottom: "1rem", marginRight: "8px", padding: "8px 16px", background: "#16a34a", color: "white", borderRadius: 6, textDecoration: "none", fontWeight: "bold", fontSize: 14 }}>+ Import Old Leads</a>
-      <div style={{ display: "flex", gap: "8px", marginTop: "1rem", marginBottom: "1rem", borderBottom: "2px solid #eee" }}>
-        <button onClick={() => setActiveTab("active")} style={tabStyle("active")}>
-          Active Leads ({leads.filter((l) => !doneStages.includes(l.stage)).length})
+
+      {/* TABS */}
+      <div style={{ display: "flex", gap: "4px", marginTop: "1rem", marginBottom: "1rem", borderBottom: "2px solid #eee", flexWrap: "wrap" }}>
+        <button onClick={() => setActiveTab("messenger")} style={tabStyle("messenger")}>
+          💬 Messenger ({messengerLeads.length})
+        </button>
+        <button onClick={() => setActiveTab("comments")} style={tabStyle("comments")}>
+          💬 Post Comments ({commentLeads.length})
         </button>
         <button onClick={() => setActiveTab("facebook-done")} style={tabStyle("facebook-done")}>
-          Facebook Done ({leads.filter((l) => l.stage === "Facebook Done").length})
+          ✅ Facebook Done ({fbDoneLeads.length})
         </button>
         <button onClick={() => setActiveTab("email-done")} style={tabStyle("email-done")}>
-          Email Done ({leads.filter((l) => l.stage === "Email Done").length})
+          📧 Email Done ({emailDoneLeads.length})
         </button>
       </div>
+
       {loading ? (
         <p>Loading...</p>
+      ) : filteredLeads().length === 0 ? (
+        <p style={{ color: "#888", marginTop: "2rem", textAlign: "center" }}>Walang leads dito.</p>
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
           <thead>
@@ -131,6 +147,8 @@ export default function Dashboard() {
               <th style={{ padding: "10px" }}>Name</th>
               <th style={{ padding: "10px" }}>Email</th>
               <th style={{ padding: "10px" }}>Source</th>
+              {activeTab === "comments" && <th style={{ padding: "10px" }}>Post</th>}
+              {activeTab === "comments" && <th style={{ padding: "10px" }}>Comment</th>}
               <th style={{ padding: "10px" }}>Stage</th>
               <th style={{ padding: "10px" }}>Heat</th>
               <th style={{ padding: "10px" }}>Reply Status</th>
@@ -139,7 +157,7 @@ export default function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {filteredLeads.map((lead) => {
+            {filteredLeads().map((lead) => {
               const status = getReplyStatus(lead);
               const stage = lead.stage === "Bagong Lead" ? "New Lead" : lead.stage;
               const isUpdating = updatingId === lead.id;
@@ -150,6 +168,16 @@ export default function Dashboard() {
                   </td>
                   <td style={{ padding: "10px" }}>{lead.email || "-"}</td>
                   <td style={{ padding: "10px" }}>{lead.source}</td>
+                  {activeTab === "comments" && (
+                    <td style={{ padding: "10px", fontSize: 12, color: "#555", maxWidth: 200 }}>
+                      {lead.postTitle || "-"}
+                    </td>
+                  )}
+                  {activeTab === "comments" && (
+                    <td style={{ padding: "10px", fontSize: 12, color: "#333", maxWidth: 200 }}>
+                      {lead.comment || "-"}
+                    </td>
+                  )}
                   <td style={{ padding: "10px" }}>{stage}</td>
                   <td style={{ padding: "10px", color: heatColor[lead.heat] || "#000", textTransform: "capitalize" }}>
                     {lead.heat}
@@ -163,7 +191,7 @@ export default function Dashboard() {
                     {new Date(lead.createdAt).toLocaleDateString()}
                   </td>
                   <td style={{ padding: "10px" }}>
-                    {activeTab === "active" ? (
+                    {!doneStages.includes(lead.stage) ? (
                       <button onClick={() => markAsDone(lead.id, lead.source)} disabled={isUpdating} style={{ padding: "6px 12px", background: isUpdating ? "#9ca3af" : "#22c55e", color: "white", border: "none", borderRadius: 6, cursor: isUpdating ? "not-allowed" : "pointer", fontSize: 12, fontWeight: "bold", minWidth: "90px" }}>
                         {isUpdating ? "Saving..." : "Mark Done"}
                       </button>
