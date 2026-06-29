@@ -20,6 +20,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    fetch("/api/auto-archive", { method: "POST" }).catch(console.error);
     fetchLeads();
     const interval = setInterval(fetchLeads, 5000);
     return () => clearInterval(interval);
@@ -93,7 +94,7 @@ export default function Dashboard() {
       </div>
       <p>Total Leads: {leads.length}</p>
 
-      <a
+      
         href="/import"
         style={{
           display: "inline-block",
