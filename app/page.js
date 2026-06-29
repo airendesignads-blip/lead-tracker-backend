@@ -7,6 +7,8 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [activeTab, setActiveTab] = useState("messenger");
   const [updatingId, setUpdatingId] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const fetchLeads = () => {
     fetch("/api/leads")
@@ -25,6 +27,21 @@ export default function Dashboard() {
     const interval = setInterval(fetchLeads, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const importComments = async () => {
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const res = await fetch("/api/import-comments", { method: "POST" });
+      const data = await res.json();
+      setImportResult(`✅ Imported ${data.imported} comments!`);
+      await fetchLeads();
+    } catch (err) {
+      setImportResult("❌ Error importing comments.");
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const heatColor = { hot: "#ef4444", warm: "#f59e0b", cold: "#3b82f6" };
   const doneStages = ["Facebook Done", "Email Done", "Done"];
@@ -80,11 +97,8 @@ export default function Dashboard() {
     }
   };
 
-  // Messenger leads — walang postId (nagmessage sa Messenger)
   const messengerLeads = leads.filter((l) => !l.postId && !doneStages.includes(l.stage));
-  // Comment leads — may postId (nag-comment sa post)
   const commentLeads = leads.filter((l) => l.postId && !doneStages.includes(l.stage));
-  // Done leads
   const fbDoneLeads = leads.filter((l) => l.stage === "Facebook Done");
   const emailDoneLeads = leads.filter((l) => l.stage === "Email Done");
 
@@ -118,7 +132,21 @@ export default function Dashboard() {
         )}
       </div>
       <p>Total Leads: {leads.length}</p>
-      <a href="/import" style={{ display: "inline-block", marginBottom: "1rem", marginRight: "8px", padding: "8px 16px", background: "#16a34a", color: "white", borderRadius: 6, textDecoration: "none", fontWeight: "bold", fontSize: 14 }}>+ Import Old Leads</a>
+
+      {/* BUTTONS */}
+      <div style={{ display: "flex", gap: 8, marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+        <a href="/import" style={{ display: "inline-block", padding: "8px 16px", background: "#16a34a", color: "white", borderRadius: 6, textDecoration: "none", fontWeight: "bold", fontSize: 14 }}>
+          + Import Old Leads
+        </a>
+        <button
+          onClick={importComments}
+          disabled={importing}
+          style={{ padding: "8px 16px", background: importing ? "#9ca3af" : "#2563eb", color: "white", border: "none", borderRadius: 6, cursor: importing ? "not-allowed" : "pointer", fontWeight: "bold", fontSize: 14 }}
+        >
+          {importing ? "Importing..." : "📥 Import FB Comments"}
+        </button>
+        {importResult && <span style={{ fontSize: 13, color: "#16a34a" }}>{importResult}</span>}
+      </div>
 
       {/* TABS */}
       <div style={{ display: "flex", gap: "4px", marginTop: "1rem", marginBottom: "1rem", borderBottom: "2px solid #eee", flexWrap: "wrap" }}>
@@ -126,7 +154,7 @@ export default function Dashboard() {
           💬 Messenger ({messengerLeads.length})
         </button>
         <button onClick={() => setActiveTab("comments")} style={tabStyle("comments")}>
-          💬 Post Comments ({commentLeads.length})
+          🗨️ Post Comments ({commentLeads.length})
         </button>
         <button onClick={() => setActiveTab("facebook-done")} style={tabStyle("facebook-done")}>
           ✅ Facebook Done ({fbDoneLeads.length})
@@ -169,12 +197,12 @@ export default function Dashboard() {
                   <td style={{ padding: "10px" }}>{lead.email || "-"}</td>
                   <td style={{ padding: "10px" }}>{lead.source}</td>
                   {activeTab === "comments" && (
-                    <td style={{ padding: "10px", fontSize: 12, color: "#555", maxWidth: 200 }}>
+                    <td style={{ padding: "10px", fontSize: 12, color: "#555", maxWidth: 180 }}>
                       {lead.postTitle || "-"}
                     </td>
                   )}
                   {activeTab === "comments" && (
-                    <td style={{ padding: "10px", fontSize: 12, color: "#333", maxWidth: 200 }}>
+                    <td style={{ padding: "10px", fontSize: 12, color: "#333", maxWidth: 180 }}>
                       {lead.comment || "-"}
                     </td>
                   )}
