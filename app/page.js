@@ -29,7 +29,7 @@ const pill = (bg, color, children) => (
   <span style={{
     display: "inline-flex", alignItems: "center", gap: 5,
     background: bg, color, padding: "3px 10px",
-    borderRadius: 999, fontSize: 14, fontWeight: 700,
+    borderRadius: 999, fontSize: 16, fontWeight: 700,
   }}>{children}</span>
 );
 
@@ -153,17 +153,17 @@ export default function Dashboard() {
           border: "none", cursor: "pointer", textAlign: "left",
           background: active ? C.surface : "transparent",
           color: active ? C.text : C.muted,
-          fontSize: 15, fontWeight: 500, transition: "all .15s",
+          fontSize: 17, fontWeight: 500, transition: "all .15s",
         }}
       >
-        <span style={{ fontSize: 18, width: 20, textAlign: "center" }}>{icon}</span>
+        <span style={{ fontSize: 20, width: 24, textAlign: "center" }}>{icon}</span>
         {label}
         {count !== undefined && (
           <span style={{
             marginLeft: "auto",
             background: active ? "#312E81" : C.surface,
             color: active ? "#818CF8" : C.muted,
-            fontSize: 13, fontWeight: 700, padding: "1px 7px", borderRadius: 20,
+            fontSize: 15, fontWeight: 700, padding: "2px 9px", borderRadius: 20,
           }}>{count}</span>
         )}
       </button>
@@ -175,9 +175,9 @@ export default function Dashboard() {
       background: C.cardBg, borderRadius: 12, padding: "16px 20px",
       border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", gap: 4,
     }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5 }}>{label}</div>
-      <div style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: -1 }}>{value}</div>
-      <div style={{ fontSize: 13, fontWeight: 500, color: subColor || C.muted }}>{sub}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5 }}>{label}</div>
+      <div style={{ fontSize: 48, fontWeight: 800, color: "#0F172A", letterSpacing: -1 }}>{value}</div>
+      <div style={{ fontSize: 15, fontWeight: 500, color: subColor || C.muted }}>{sub}</div>
     </div>
   );
 
@@ -301,7 +301,7 @@ export default function Dashboard() {
                 padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 700,
                 border: "none", cursor: importing ? "not-allowed" : "pointer",
                 background: importing ? "#9CA3AF" : C.accent, color: "#fff",
-                fontSize: 15,
+                fontSize: 17,
                 display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0,
               }}
             >
@@ -341,7 +341,7 @@ export default function Dashboard() {
                 placeholder="Search leads…"
                 style={{
                   width: "100%", padding: "8px 12px 8px 30px", borderRadius: 8,
-                  border: "1.5px solid #E2E8F0", fontSize: 15, fontFamily: "inherit",
+                  border: "1.5px solid #E2E8F0", fontSize: 17, fontFamily: "inherit",
                   outline: "none", color: "#0F172A",
                 }}
               />
@@ -356,7 +356,7 @@ export default function Dashboard() {
               ].map(({ id, label, count }) => (
                 <button key={id} onClick={() => setActiveTab(id)} style={{
                   padding: "7px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-                  fontSize: 14, fontWeight: 600,
+                  fontSize: 16, fontWeight: 600,
                   background: activeTab === id ? C.accentBg : "transparent",
                   color:      activeTab === id ? C.accentText : C.muted,
                   display: "flex", alignItems: "center", gap: 5,
@@ -381,7 +381,7 @@ export default function Dashboard() {
                 <thead>
                   <tr style={{ background: "#F8FAFC" }}>
                     {["Name","Email","Source",...(showCommentCols?["Post","Comment"]:[]),"Stage","Heat","Reply Status","Created","Action"].map((h) => (
-                      <th key={h} style={{ padding: "13px 16px", textAlign: "left", fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, borderBottom: "1px solid #E2E8F0", whiteSpace: "nowrap" }}>{h}</th>
+                      <th key={h} style={{ padding: "15px 18px", textAlign: "left", fontSize: 15, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, borderBottom: "1px solid #E2E8F0", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -395,27 +395,27 @@ export default function Dashboard() {
                     return (
                       <tr key={lead.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
                         <td style={{ padding: "12px 16px" }}>
-                          <span onClick={() => openMessenger(lead)} style={{ fontWeight: 700, color: C.blue, cursor: lead.source === "facebook" ? "pointer" : "default" }}>{lead.name}</span>
+                          <span onClick={() => openMessenger(lead)} style={{ fontWeight: 700, fontSize: 17, color: C.blue, cursor: lead.source === "facebook" ? "pointer" : "default" }}>{lead.name}</span>
                         </td>
-                        <td style={{ padding: "14px 16px", color: C.muted, fontSize: 15 }}>{lead.email || "—"}</td>
+                        <td style={{ padding: "16px 18px", color: C.muted, fontSize: 17 }}>{lead.email || "—"}</td>
                         <td style={{ padding: "12px 16px" }}>{pill(C.blueBg, C.blue, <>📘 {lead.source}</>)}</td>
-                        {showCommentCols && <td style={{ padding: "14px 16px", fontSize: 14, color: "#555", maxWidth: 160 }}>{lead.postTitle || "—"}</td>}
-                        {showCommentCols && <td style={{ padding: "14px 16px", fontSize: 14, color: "#333", maxWidth: 180 }}>{lead.comment || "—"}</td>}
-                        <td style={{ padding: "14px 16px", fontSize: 15, color: "#475569" }}>{stage}</td>
+                        {showCommentCols && <td style={{ padding: "16px 18px", fontSize: 16, color: "#555", maxWidth: 180 }}>{lead.postTitle || "—"}</td>}
+                        {showCommentCols && <td style={{ padding: "16px 18px", fontSize: 16, color: "#333", maxWidth: 200 }}>{lead.comment || "—"}</td>}
+                        <td style={{ padding: "16px 18px", fontSize: 17, color: "#475569" }}>{stage}</td>
                         <td style={{ padding: "12px 16px" }}>{pill(heatCfg.bg, heatCfg.color, <>{heatCfg.icon} {lead.heat}</>)}</td>
                         <td style={{ padding: "12px 16px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: status.bg, color: status.color, padding: "5px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: status.bg, color: status.color, padding: "6px 14px", borderRadius: 999, fontSize: 15, fontWeight: 700 }}>
                             {dot(status.color)} {status.label}
                           </span>
                         </td>
-                        <td style={{ padding: "14px 16px", fontSize: 14, color: C.muted, whiteSpace: "nowrap" }}>{new Date(lead.createdAt).toLocaleDateString()}</td>
+                        <td style={{ padding: "16px 18px", fontSize: 16, color: C.muted, whiteSpace: "nowrap" }}>{new Date(lead.createdAt).toLocaleDateString()}</td>
                         <td style={{ padding: "12px 16px" }}>
                           {!isDone ? (
-                            <button onClick={() => markAsDone(lead.id, lead.source)} disabled={isUpdating} style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, borderRadius: 7, border: "1.5px solid #BBF7D0", background: isUpdating ? "#F1F5F9" : "#F0FDF4", color: isUpdating ? C.muted : C.green, cursor: isUpdating ? "not-allowed" : "pointer", minWidth: 100 }}>
+                            <button onClick={() => markAsDone(lead.id, lead.source)} disabled={isUpdating} style={{ padding: "9px 16px", fontSize: 15, fontWeight: 700, borderRadius: 7, border: "1.5px solid #BBF7D0", background: isUpdating ? "#F1F5F9" : "#F0FDF4", color: isUpdating ? C.muted : C.green, cursor: isUpdating ? "not-allowed" : "pointer", minWidth: 110 }}>
                               {isUpdating ? "Saving…" : "✓ Mark Done"}
                             </button>
                           ) : (
-                            <button onClick={() => markAsActive(lead.id)} disabled={isUpdating} style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, borderRadius: 7, border: "1.5px solid #E2E8F0", background: "#F1F5F9", color: C.muted, cursor: isUpdating ? "not-allowed" : "pointer", minWidth: 100 }}>
+                            <button onClick={() => markAsActive(lead.id)} disabled={isUpdating} style={{ padding: "9px 16px", fontSize: 15, fontWeight: 700, borderRadius: 7, border: "1.5px solid #E2E8F0", background: "#F1F5F9", color: C.muted, cursor: isUpdating ? "not-allowed" : "pointer", minWidth: 110 }}>
                               {isUpdating ? "Saving…" : "↩ Reopen"}
                             </button>
                           )}
@@ -433,7 +433,7 @@ export default function Dashboard() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; }
-        body { margin: 0; }
+        body { margin: 0; font-size: 18px; }
         @keyframes livePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50%       { opacity: .45; transform: scale(.8); }
