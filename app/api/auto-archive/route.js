@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function POST() {
-  const oneDayAgo = new Date();
-  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+  const tenMinutesAgo = new Date();
+  tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
 
   const twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
@@ -22,7 +22,7 @@ export async function POST() {
 
     const lastTime = new Date(last.createdAt);
 
-    if (lead.source === "facebook") return lastTime < oneDayAgo;
+    if (lead.source === "facebook") return lastTime < tenMinutesAgo;
     if (lead.source === "email") return lastTime < twoDaysAgo;
 
     return false;
