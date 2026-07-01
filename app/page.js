@@ -91,12 +91,12 @@ export default function Dashboard() {
     if (lead.source !== "facebook") return;
 
     if (lead.postId) {
-      // Comment lead — buksan ang Facebook post para makita ang comment
+      // Comment lead — buksan ang Facebook post
       window.open(`https://www.facebook.com/${lead.postId}`, "_blank");
     } else {
       // Messenger lead — buksan sa Business Inbox
       window.open(
-        `https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${lead.id}`,
+        `https://business.facebook.com/latest/inbox/messenger/?asset_id=1678784839106037&selected_item_id=${lead.id}`,
         "_blank"
       );
     }
@@ -416,7 +416,7 @@ export default function Dashboard() {
                           </span>
                         </td>
                         <td style={{ padding: "16px 18px", color: C.muted, fontSize: 17 }}>{lead.email || "—"}</td>
-                        <td style={{ padding: "12px 16px" }}>{pill(C.blueBg, C.blue, <>📘 {lead.source}</>)}</td>
+                        <td style={{ padding: "12px 16px" }}>{pill(C.blueBg, C.blue, <>📘 {lead.postId ? "Facebook Post Comment" : "Facebook Messenger"}</>)}</td>
                         {showCommentCols && <td style={{ padding: "16px 18px", fontSize: 16, color: "#555", maxWidth: 180 }}>{lead.postTitle || "—"}</td>}
                         {showCommentCols && <td style={{ padding: "16px 18px", fontSize: 16, color: "#333", maxWidth: 200 }}>{lead.comment || "—"}</td>}
                         <td style={{ padding: "16px 18px", fontSize: 17, color: "#475569" }}>{stage}</td>
