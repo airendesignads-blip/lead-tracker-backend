@@ -89,14 +89,17 @@ export default function Dashboard() {
 
   const openMessenger = (lead) => {
     if (lead.source !== "facebook") return;
-    // Para sa comment leads, ang id ay "fb_comment_123456" — kuhanin lang ang number
-    const threadID = lead.id.startsWith("fb_comment_")
-      ? lead.id.replace("fb_comment_", "")
-      : lead.id;
-    window.open(
-      `https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${threadID}`,
-      "_blank"
-    );
+
+    if (lead.postId) {
+      // Comment lead — buksan ang Facebook post para makita ang comment
+      window.open(`https://www.facebook.com/${lead.postId}`, "_blank");
+    } else {
+      // Messenger lead — buksan sa Business Inbox
+      window.open(
+        `https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${lead.id}`,
+        "_blank"
+      );
+    }
   };
 
   const markAsDone = async (leadId, source) => {
