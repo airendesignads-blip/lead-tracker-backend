@@ -88,11 +88,15 @@ export default function Dashboard() {
   };
 
   const openMessenger = (lead) => {
-    if (lead.source === "facebook")
-      window.open(
-        `https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${lead.id}`,
-        "_blank"
-      );
+    if (lead.source !== "facebook") return;
+    // Para sa comment leads, ang id ay "fb_comment_123456" — kuhanin lang ang number
+    const threadID = lead.id.startsWith("fb_comment_")
+      ? lead.id.replace("fb_comment_", "")
+      : lead.id;
+    window.open(
+      `https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${threadID}`,
+      "_blank"
+    );
   };
 
   const markAsDone = async (leadId, source) => {
@@ -298,7 +302,7 @@ export default function Dashboard() {
               onClick={importComments}
               disabled={importing}
               style={{
-                padding: "9px 16px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                padding: "9px 16px", borderRadius: 8, fontWeight: 700,
                 border: "none", cursor: importing ? "not-allowed" : "pointer",
                 background: importing ? "#9CA3AF" : C.accent, color: "#fff",
                 fontSize: 17,
@@ -395,7 +399,18 @@ export default function Dashboard() {
                     return (
                       <tr key={lead.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
                         <td style={{ padding: "12px 16px" }}>
-                          <span onClick={() => openMessenger(lead)} style={{ fontWeight: 700, fontSize: 17, color: C.blue, cursor: lead.source === "facebook" ? "pointer" : "default" }}>{lead.name}</span>
+                          <span
+                            onClick={() => openMessenger(lead)}
+                            title="Buksan sa Messenger"
+                            style={{
+                              fontWeight: 700, fontSize: 17, color: C.blue,
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                              textDecorationStyle: "dotted",
+                            }}
+                          >
+                            💬 {lead.name}
+                          </span>
                         </td>
                         <td style={{ padding: "16px 18px", color: C.muted, fontSize: 17 }}>{lead.email || "—"}</td>
                         <td style={{ padding: "12px 16px" }}>{pill(C.blueBg, C.blue, <>📘 {lead.source}</>)}</td>
