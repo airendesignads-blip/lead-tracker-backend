@@ -1,8 +1,4 @@
 // app/api/messenger/send/route.js
-//
-// Tinatanggap: { leadId, message }
-// Nagse-send ng reply sa actual na Facebook Messenger thread
-// Nag-lo-log din ng reply sa Activity table
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -15,25 +11,20 @@ export async function POST(req) {
       return NextResponse.json({ error: "leadId at message ay required." }, { status: 400 });
     }
 
-    // Kunin ang lead para makuha ang Facebook PSID
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-    });
-
+    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
     if (!lead) {
       return NextResponse.json({ error: "Lead not found." }, { status: 404 });
     }
 
-    // I-send ang message sa Facebook Messenger via Graph API
-    // Ang lead.id ay ang PSID (Facebook sender ID) ng customer
+    // lead.id = Facebook PSID ng customer (based sa schema)
     const fbRes = await fetch(
       `https://graph.facebook.com/v21.0/me/messages?access_token=${process.env.FB_PAGE_ACCESS_TOKEN}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recipient: { id: lead.facebookId ?? lead.id }, // facebookId o id depende sa schema mo
-          message:   { text: message.trim() },
+          recipient:      { id: lead.id },
+          message:        { text: message.trim() },
           messaging_type: "RESPONSE",
         }),
       }
@@ -49,19 +40,16 @@ export async function POST(req) {
       );
     }
 
-    // I-log ang reply sa Activity table
+    // I-log sa Activity table — type="manual_reply", note=yung message
     await prisma.activity.create({
       data: {
         leadId:   lead.id,
-        aiReply:  message.trim(),
-        isManual: true,           // flag na galing sa CRM, hindi AI
+        type:     "manual_reply",          // gamit ang existing 'type' field
+        note:     message.trim(),          // gamit ang existing 'note' field
+        aiReply:  message.trim(),          // para makita sa getReplyStatus() as "Replied"
         createdAt: new Date(),
       },
     });
-
-    // I-update ang lead stage pabalik sa active kung naka-Done na
-    // (optional — tanggalin kung ayaw mo ito)
-    // await prisma.lead.update({ where: { id: lead.id }, data: { stage: "Bagong Lead" } });
 
     return NextResponse.json({ success: true, messageId: fbData.message_id });
 
