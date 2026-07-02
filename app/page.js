@@ -25,6 +25,91 @@ const dot = (color) => (
   <span style={{ width:6, height:6, borderRadius:"50%", background:color, display:"inline-block", flexShrink:0 }} />
 );
 
+// ── CONVERSATION PANEL — sa labas ng Dashboard para hindi mag-remount every render ──
+function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sendResult, sendReply, closePanel, chatEndRef, getReplyStatus }) {
+  if (!selectedLead) return null;
+  const acts   = selectedLead.activities || [];
+  const status = getReplyStatus(selectedLead);
+  return (
+    <>
+      <div onClick={closePanel} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:40 }} />
+      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:420, background:"#fff", zIndex:50, display:"flex", flexDirection:"column", boxShadow:"-4px 0 32px rgba(0,0,0,0.12)" }}>
+        {/* Header */}
+        <div style={{ padding:"16px 20px", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", gap:12, background:"#F8FAFC" }}>
+          <div style={{ width:40, height:40, borderRadius:"50%", background:"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.accentText, flexShrink:0 }}>
+            {(selectedLead.name||"?")[0].toUpperCase()}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontWeight:700, fontSize:15, color:"#0F172A", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{selectedLead.name}</div>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:2 }}>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:4, background:status.bg, color:status.color, padding:"2px 8px", borderRadius:999, fontSize:11, fontWeight:700 }}>
+                {dot(status.color)} {status.label}
+              </span>
+              <span style={{ fontSize:11, color:C.muted }}>· {selectedLead.source}</span>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            <a href={`https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${selectedLead.id}`} target="_blank" rel="noreferrer"
+              style={{ padding:"6px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.blue, fontSize:11, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>
+              📘 Open
+            </a>
+            <button onClick={closePanel} style={{ padding:"6px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.muted, fontSize:13, cursor:"pointer", fontWeight:700 }}>✕</button>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 20px", display:"flex", flexDirection:"column", gap:12, background:"#F8FAFC" }}>
+          {acts.length === 0 ? (
+            <div style={{ textAlign:"center", color:C.muted, fontSize:13, marginTop:40 }}>Walang messages pa.</div>
+          ) : acts.map((act, i) => {
+            const isReply = !!act.aiReply;
+            const msgText = isReply ? act.aiReply : (act.note || "—");
+            const time    = act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
+            return (
+              <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:isReply?"flex-end":"flex-start" }}>
+                <div style={{ maxWidth:"80%", padding:"10px 14px", borderRadius:isReply?"16px 16px 4px 16px":"16px 16px 16px 4px", background:isReply?C.accent:"#fff", color:isReply?"#fff":"#1E293B", border:isReply?"none":"1px solid #E2E8F0", fontSize:13, lineHeight:1.5 }}>
+                  {msgText}
+                </div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:3, display:"flex", alignItems:"center", gap:4 }}>
+                  {isReply
+                    ? <><span style={{ color:C.green }}>✓ Sent</span> · {act.type==="manual_reply"?"Manual reply":"AI reply"} · {time}</>
+                    : <>{selectedLead.name} · {time}</>}
+                </div>
+              </div>
+            );
+          })}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Reply box */}
+        <div style={{ padding:"14px 20px", borderTop:"1px solid #E2E8F0", background:"#fff" }}>
+          {sendResult && (
+            <div style={{ fontSize:12, color:sendResult.ok?C.green:C.red, marginBottom:8, fontWeight:600 }}>{sendResult.msg}</div>
+          )}
+          <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
+            <textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+              placeholder="Mag-type ng reply… (Enter to send, Shift+Enter for new line)"
+              rows={3}
+              style={{ flex:1, padding:"10px 12px", borderRadius:10, border:"1.5px solid #E2E8F0", fontSize:13, fontFamily:"inherit", resize:"none", outline:"none", lineHeight:1.5, color:"#0F172A" }}
+            />
+            <button
+              onClick={sendReply}
+              disabled={sending || !replyText.trim()}
+              style={{ padding:"10px 16px", borderRadius:10, border:"none", background:sending||!replyText.trim()?"#E2E8F0":C.accent, color:sending||!replyText.trim()?C.muted:"#fff", fontWeight:700, fontSize:13, cursor:sending||!replyText.trim()?"not-allowed":"pointer", whiteSpace:"nowrap", flexShrink:0, height:44 }}
+            >
+              {sending ? "Sending…" : "Send 📤"}
+            </button>
+          </div>
+          <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>💡 Mato-track sa Messenger inbox mo bilang "replied"</div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function Dashboard() {
   const [leads,          setLeads]          = useState([]);
   const [loading,        setLoading]        = useState(true);
@@ -64,9 +149,7 @@ export default function Dashboard() {
     return () => clearInterval(iv);
   }, []);
 
-  useEffect(() => {
-    if (selectedLead) chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selectedLead]);
+  // Walang auto-scroll — manual lang ang user kung kailan mag-scroll
 
   const importComments = async () => {
     setImporting(true); setImportResult(null);
@@ -173,127 +256,6 @@ export default function Dashboard() {
       <div style={{ fontSize:11, fontWeight:500, color:subColor||C.muted }}>{sub}</div>
     </div>
   );
-
-  // ── CONVERSATION PANEL ────────────────────────────────────────────────
-  const ConversationPanel = () => {
-    if (!selectedLead) return null;
-    const acts   = selectedLead.activities || [];
-    const status = getReplyStatus(selectedLead);
-    return (
-      <>
-        {/* Backdrop */}
-        <div onClick={closePanel} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:40 }} />
-
-        {/* Drawer */}
-        <div style={{
-          position:"fixed", top:0, right:0, bottom:0, width:420,
-          background:"#fff", zIndex:50, display:"flex", flexDirection:"column",
-          boxShadow:"-4px 0 32px rgba(0,0,0,0.12)",
-        }}>
-          {/* Panel header */}
-          <div style={{ padding:"16px 20px", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", gap:12, background:"#F8FAFC" }}>
-            <div style={{ width:40, height:40, borderRadius:"50%", background:"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.accentText, flexShrink:0 }}>
-              {(selectedLead.name||"?")[0].toUpperCase()}
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontWeight:700, fontSize:15, color:"#0F172A", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{selectedLead.name}</div>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:2 }}>
-                <span style={{ display:"inline-flex", alignItems:"center", gap:4, background:status.bg, color:status.color, padding:"2px 8px", borderRadius:999, fontSize:11, fontWeight:700 }}>
-                  {dot(status.color)} {status.label}
-                </span>
-                <span style={{ fontSize:11, color:C.muted }}>· {selectedLead.source}</span>
-              </div>
-            </div>
-            <div style={{ display:"flex", gap:6 }}>
-              <a
-                href={`https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${selectedLead.id}`}
-                target="_blank" rel="noreferrer"
-                style={{ padding:"6px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.blue, fontSize:11, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}
-                title="Open in Messenger"
-              >
-                📘 Open
-              </a>
-              <button onClick={closePanel} style={{ padding:"6px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.muted, fontSize:13, cursor:"pointer", fontWeight:700 }}>✕</button>
-            </div>
-          </div>
-
-          {/* Messages area */}
-          <div style={{ flex:1, overflowY:"auto", padding:"16px 20px", display:"flex", flexDirection:"column", gap:12, background:"#F8FAFC" }}>
-            {acts.length === 0 ? (
-              <div style={{ textAlign:"center", color:C.muted, fontSize:13, marginTop:40 }}>Walang messages pa.</div>
-            ) : (
-              acts.map((act, i) => {
-                const isReply = !!act.aiReply;
-                const msgText = isReply ? act.aiReply : (act.note || "—");
-                const time    = act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
-                return (
-                  <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:isReply?"flex-end":"flex-start" }}>
-                    <div style={{
-                      maxWidth:"80%", padding:"10px 14px", borderRadius:isReply?"16px 16px 4px 16px":"16px 16px 16px 4px",
-                      background:isReply ? C.accent : "#fff",
-                      color:isReply ? "#fff" : "#1E293B",
-                      border:isReply ? "none" : "1px solid #E2E8F0",
-                      fontSize:13, lineHeight:1.5,
-                    }}>
-                      {msgText}
-                    </div>
-                    <div style={{ fontSize:10, color:C.muted, marginTop:3, display:"flex", alignItems:"center", gap:4 }}>
-                      {isReply ? (
-                        <><span style={{ color:C.green }}>✓ Sent</span> · {act.type === "manual_reply" ? "Manual reply" : "AI reply"} · {time}</>
-                      ) : (
-                        <>{selectedLead.name} · {time}</>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            <div ref={chatEndRef} />
-          </div>
-
-          {/* Reply box */}
-          <div style={{ padding:"14px 20px", borderTop:"1px solid #E2E8F0", background:"#fff" }}>
-            {sendResult && (
-              <div style={{ fontSize:12, color:sendResult.ok ? C.green : C.red, marginBottom:8, fontWeight:600 }}>
-                {sendResult.msg}
-              </div>
-            )}
-            <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
-                placeholder="Mag-type ng reply… (Enter to send, Shift+Enter for new line)"
-                rows={3}
-                style={{
-                  flex:1, padding:"10px 12px", borderRadius:10,
-                  border:"1.5px solid #E2E8F0", fontSize:13,
-                  fontFamily:"inherit", resize:"none", outline:"none",
-                  lineHeight:1.5, color:"#0F172A",
-                }}
-              />
-              <button
-                onClick={sendReply}
-                disabled={sending || !replyText.trim()}
-                style={{
-                  padding:"10px 16px", borderRadius:10, border:"none",
-                  background:sending || !replyText.trim() ? "#E2E8F0" : C.accent,
-                  color:sending || !replyText.trim() ? C.muted : "#fff",
-                  fontWeight:700, fontSize:13, cursor:sending||!replyText.trim()?"not-allowed":"pointer",
-                  whiteSpace:"nowrap", flexShrink:0, height:44,
-                }}
-              >
-                {sending ? "Sending…" : "Send 📤"}
-              </button>
-            </div>
-            <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>
-              💡 Mato-track sa Messenger inbox mo bilang "replied"
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  };
 
   // ── RENDER ────────────────────────────────────────────────────────────
   return (
@@ -464,7 +426,17 @@ export default function Dashboard() {
       </main>
 
       {/* CONVERSATION PANEL */}
-      <ConversationPanel />
+      <ConversationPanel
+        selectedLead={selectedLead}
+        replyText={replyText}
+        setReplyText={setReplyText}
+        sending={sending}
+        sendResult={sendResult}
+        sendReply={sendReply}
+        closePanel={closePanel}
+        chatEndRef={chatEndRef}
+        getReplyStatus={getReplyStatus}
+      />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
