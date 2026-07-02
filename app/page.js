@@ -224,7 +224,7 @@ export default function Dashboard() {
             ) : (
               acts.map((act, i) => {
                 const isReply = !!act.aiReply;
-                const msgText = isReply ? act.aiReply : (act.message || act.content || act.text || "(message)");
+                const msgText = isReply ? act.aiReply : (act.note || "—");
                 const time    = act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
                 return (
                   <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:isReply?"flex-end":"flex-start" }}>
@@ -239,7 +239,7 @@ export default function Dashboard() {
                     </div>
                     <div style={{ fontSize:10, color:C.muted, marginTop:3, display:"flex", alignItems:"center", gap:4 }}>
                       {isReply ? (
-                        <><span style={{ color:C.green }}>✓ Sent</span> · {act.isManual ? "Manual reply" : "AI reply"} · {time}</>
+                        <><span style={{ color:C.green }}>✓ Sent</span> · {act.type === "manual_reply" ? "Manual reply" : "AI reply"} · {time}</>
                       ) : (
                         <>{selectedLead.name} · {time}</>
                       )}
