@@ -7,9 +7,9 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
-    const formData  = await req.formData();
-    const leadId    = formData.get("leadId");
-    const file      = formData.get("file");
+    const formData = await req.formData();
+    const leadId   = formData.get("leadId");
+    const file     = formData.get("file");
 
     if (!leadId || !file) {
       return NextResponse.json({ error: "leadId at file ay required." }, { status: 400 });
@@ -24,8 +24,8 @@ export async function POST(req) {
 
     // Build multipart body para sa Facebook Send API
     const fbForm = new FormData();
-    fbForm.append("recipient",        JSON.stringify({ id: leadId }));
-    fbForm.append("message",          JSON.stringify({
+    fbForm.append("recipient", JSON.stringify({ id: leadId }));
+    fbForm.append("message", JSON.stringify({
       attachment: {
         type,
         payload: { is_reusable: true },
@@ -50,7 +50,6 @@ export async function POST(req) {
     }
 
     return NextResponse.json({ success: true, messageId: fbData.message_id });
-
   } catch (err) {
     console.error("[send-attachment] Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
