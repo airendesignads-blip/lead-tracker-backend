@@ -25,40 +25,96 @@ const dot = (color) => (
   <span style={{ width:6, height:6, borderRadius:"50%", background:color, display:"inline-block", flexShrink:0 }} />
 );
 
+// ── DEFAULT SAVED REPLIES ─────────────────────────────────────────────────────
+const DEFAULT_REPLIES = [
+  { id:"1", title:"Welcome",       text:"Salamat sa iyong message! Sandali lang ha. 😊" },
+  { id:"2", title:"Pricing UV DTF", text:"Terms: ✓400 Pesos for 10 inches x 22 inches ✓For UV DTF, dapat ready to print na ang file bago e-send sa email address ng Ai-ren Design Ads. ✓No White Background sa mismong file.\n\nVISIT US: MC Briones St. Hiway Guizo 6014 Mandaue, Philippines (Beside Korean Surplus)\nContact us: (032) 318-3089 | 09175808616\nEmail: airendesignads@gmail.com\nFB PAGE: https://www.facebook.com/airengarments\n\n50% Downpayment Full Payment Upon Pick-Up or Before Delivery / Shipment\nNationwide Shipping Charge to Client" },
+  { id:"3", title:"Payment GCash",  text:"Para sa gustong magbayad through Gcash:\n0917 620 6260 - AIDLYN NGUJO\nGCASH 0917 580 8610 - SHIBA MAY NGUJO\nGCASH 0917 156 7536 - ESMECA AN NGUJO" },
+  { id:"4", title:"Address",        text:"Ai-ren Design Ads\nHiway Guizo, Mandaue City, (Beside Korean Surplus)\nBUSINESS HOURS: From Monday to Saturday 9:00am to 12:00nn / 1:00pm to 6:00pm" },
+  { id:"5", title:"Pick Up",        text:"Pwede na ma pick up sir/maam! 😊" },
+];
+
 // ── CONVERSATION PANEL — sa labas ng Dashboard para hindi mag-remount every render ──
 function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sendResult, sendReply, closePanel, chatEndRef, getReplyStatus }) {
+  const [showSavedReplies, setShowSavedReplies] = useState(false);
+  const [savedReplies,     setSavedReplies]     = useState(() => {
+    try {
+      const stored = localStorage.getItem("crm_saved_replies");
+      return stored ? JSON.parse(stored) : DEFAULT_REPLIES;
+    } catch { return DEFAULT_REPLIES; }
+  });
+  const [showAddForm,  setShowAddForm]  = useState(false);
+  const [newTitle,     setNewTitle]     = useState("");
+  const [newText,      setNewText]      = useState("");
+  const [editingId,    setEditingId]    = useState(null);
+  const [searchReply,  setSearchReply]  = useState("");
+
+  const saveToStorage = (replies) => {
+    setSavedReplies(replies);
+    localStorage.setItem("crm_saved_replies", JSON.stringify(replies));
+  };
+
+  const addReply = () => {
+    if (!newTitle.trim() || !newText.trim()) return;
+    if (editingId) {
+      const updated = savedReplies.map(r => r.id === editingId ? { ...r, title: newTitle.trim(), text: newText.trim() } : r);
+      saveToStorage(updated);
+      setEditingId(null);
+    } else {
+      const newReply = { id: Date.now().toString(), title: newTitle.trim(), text: newText.trim() };
+      saveToStorage([...savedReplies, newReply]);
+    }
+    setNewTitle(""); setNewText(""); setShowAddForm(false);
+  };
+
+  const deleteReply = (id) => saveToStorage(savedReplies.filter(r => r.id !== id));
+
+  const startEdit = (r) => {
+    setEditingId(r.id); setNewTitle(r.title); setNewText(r.text); setShowAddForm(true);
+  };
+
+  const useReply = (text) => {
+    setReplyText(text);
+    setShowSavedReplies(false);
+  };
+
+  const filtered = savedReplies.filter(r =>
+    r.title.toLowerCase().includes(searchReply.toLowerCase()) ||
+    r.text.toLowerCase().includes(searchReply.toLowerCase())
+  );
+
   if (!selectedLead) return null;
   const acts   = selectedLead.activities || [];
   const status = getReplyStatus(selectedLead);
+
   return (
     <>
-      <div onClick={closePanel} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:40 }} />
-      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:420, background:"#fff", zIndex:50, display:"flex", flexDirection:"column", boxShadow:"-4px 0 32px rgba(0,0,0,0.12)" }}>
+      <div onClick={() => { closePanel(); setShowSavedReplies(false); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:40 }} />
+      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:440, background:"#fff", zIndex:50, display:"flex", flexDirection:"column", boxShadow:"-4px 0 32px rgba(0,0,0,0.12)" }}>
+
         {/* Header */}
-        <div style={{ padding:"16px 20px", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", gap:12, background:"#F8FAFC" }}>
-          <div style={{ width:40, height:40, borderRadius:"50%", background:"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.accentText, flexShrink:0 }}>
+        <div style={{ padding:"14px 18px", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", gap:10, background:"#F8FAFC", flexShrink:0 }}>
+          <div style={{ width:38, height:38, borderRadius:"50%", background:"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:700, color:C.accentText, flexShrink:0 }}>
             {(selectedLead.name||"?")[0].toUpperCase()}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontWeight:700, fontSize:15, color:"#0F172A", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{selectedLead.name}</div>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:2 }}>
-              <span style={{ display:"inline-flex", alignItems:"center", gap:4, background:status.bg, color:status.color, padding:"2px 8px", borderRadius:999, fontSize:11, fontWeight:700 }}>
+            <div style={{ fontWeight:700, fontSize:14, color:"#0F172A", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{selectedLead.name}</div>
+            <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:1 }}>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:3, background:status.bg, color:status.color, padding:"1px 7px", borderRadius:999, fontSize:10, fontWeight:700 }}>
                 {dot(status.color)} {status.label}
               </span>
-              <span style={{ fontSize:11, color:C.muted }}>· {selectedLead.source}</span>
+              <span style={{ fontSize:10, color:C.muted }}>· {selectedLead.source}</span>
             </div>
           </div>
-          <div style={{ display:"flex", gap:6 }}>
-            <a href={`https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${selectedLead.id}`} target="_blank" rel="noreferrer"
-              style={{ padding:"6px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.blue, fontSize:11, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>
-              📘 Open
-            </a>
-            <button onClick={closePanel} style={{ padding:"6px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.muted, fontSize:13, cursor:"pointer", fontWeight:700 }}>✕</button>
-          </div>
+          <a href={`https://business.facebook.com/latest/inbox/direct/messenger/?asset_id=1678784839106037&threadID=${selectedLead.id}`} target="_blank" rel="noreferrer"
+            style={{ padding:"5px 9px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.blue, fontSize:11, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>
+            📘 Open
+          </a>
+          <button onClick={closePanel} style={{ padding:"5px 9px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.muted, fontSize:12, cursor:"pointer", fontWeight:700 }}>✕</button>
         </div>
 
         {/* Messages */}
-        <div style={{ flex:1, overflowY:"auto", padding:"16px 20px", display:"flex", flexDirection:"column", gap:12, background:"#F8FAFC" }}>
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 18px", display:"flex", flexDirection:"column", gap:10, background:"#F8FAFC" }}>
           {acts.length === 0 ? (
             <div style={{ textAlign:"center", color:C.muted, fontSize:13, marginTop:40 }}>Walang messages pa.</div>
           ) : acts.map((act, i) => {
@@ -67,13 +123,11 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
             const time    = act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
             return (
               <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:isReply?"flex-end":"flex-start" }}>
-                <div style={{ maxWidth:"80%", padding:"10px 14px", borderRadius:isReply?"16px 16px 4px 16px":"16px 16px 16px 4px", background:isReply?C.accent:"#fff", color:isReply?"#fff":"#1E293B", border:isReply?"none":"1px solid #E2E8F0", fontSize:13, lineHeight:1.5 }}>
+                <div style={{ maxWidth:"82%", padding:"9px 13px", borderRadius:isReply?"16px 16px 4px 16px":"16px 16px 16px 4px", background:isReply?C.accent:"#fff", color:isReply?"#fff":"#1E293B", border:isReply?"none":"1px solid #E2E8F0", fontSize:13, lineHeight:1.5, whiteSpace:"pre-wrap" }}>
                   {msgText}
                 </div>
-                <div style={{ fontSize:10, color:C.muted, marginTop:3, display:"flex", alignItems:"center", gap:4 }}>
-                  {isReply
-                    ? <><span style={{ color:C.green }}>✓ Sent</span> · {act.type==="manual_reply"?"Manual reply":"AI reply"} · {time}</>
-                    : <>{selectedLead.name} · {time}</>}
+                <div style={{ fontSize:10, color:C.muted, marginTop:2, display:"flex", alignItems:"center", gap:3 }}>
+                  {isReply ? <><span style={{ color:C.green }}>✓ Sent</span> · {act.type==="manual_reply"?"Manual":"AI"} · {time}</> : <>{selectedLead.name} · {time}</>}
                 </div>
               </div>
             );
@@ -81,11 +135,78 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
           <div ref={chatEndRef} />
         </div>
 
+        {/* ── SAVED REPLIES PANEL ── */}
+        {showSavedReplies && (
+          <div style={{ borderTop:"1px solid #E2E8F0", background:"#fff", maxHeight:320, display:"flex", flexDirection:"column", flexShrink:0 }}>
+            {/* Saved replies header */}
+            <div style={{ padding:"10px 16px", borderBottom:"1px solid #F1F5F9", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontWeight:700, fontSize:13, color:"#0F172A", flex:1 }}>💬 Saved Replies</span>
+              <button onClick={() => { setShowAddForm(!showAddForm); setEditingId(null); setNewTitle(""); setNewText(""); }}
+                style={{ padding:"4px 10px", borderRadius:7, border:`1.5px solid ${C.accent}`, background:C.accentBg, color:C.accentText, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                {showAddForm && !editingId ? "✕ Cancel" : "+ Add New"}
+              </button>
+            </div>
+
+            {/* Add / Edit form */}
+            {showAddForm && (
+              <div style={{ padding:"10px 16px", borderBottom:"1px solid #F1F5F9", background:"#FAFBFF", display:"flex", flexDirection:"column", gap:6 }}>
+                <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Title (e.g. Welcome, Pricing...)"
+                  style={{ padding:"7px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", fontSize:12, fontFamily:"inherit", outline:"none", color:"#0F172A" }} />
+                <textarea value={newText} onChange={e => setNewText(e.target.value)} placeholder="I-type ang reply template dito..." rows={3}
+                  style={{ padding:"7px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", fontSize:12, fontFamily:"inherit", outline:"none", resize:"none", color:"#0F172A", lineHeight:1.5 }} />
+                <button onClick={addReply} disabled={!newTitle.trim()||!newText.trim()}
+                  style={{ padding:"7px 12px", borderRadius:7, border:"none", background:!newTitle.trim()||!newText.trim()?"#E2E8F0":C.accent, color:!newTitle.trim()||!newText.trim()?C.muted:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                  {editingId ? "💾 Save Changes" : "✓ Save Reply"}
+                </button>
+              </div>
+            )}
+
+            {/* Search */}
+            <div style={{ padding:"8px 16px", borderBottom:"1px solid #F1F5F9" }}>
+              <input value={searchReply} onChange={e => setSearchReply(e.target.value)} placeholder="🔍 Hanapin ang reply..."
+                style={{ width:"100%", padding:"6px 10px", borderRadius:7, border:"1.5px solid #E2E8F0", fontSize:12, fontFamily:"inherit", outline:"none", color:"#0F172A", boxSizing:"border-box" }} />
+            </div>
+
+            {/* List */}
+            <div style={{ overflowY:"auto", flex:1 }}>
+              {filtered.length === 0 ? (
+                <div style={{ padding:16, textAlign:"center", color:C.muted, fontSize:12 }}>Walang nahanap.</div>
+              ) : filtered.map(r => (
+                <div key={r.id} style={{ padding:"9px 16px", borderBottom:"1px solid #F8FAFC", display:"flex", alignItems:"flex-start", gap:8 }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#0F172A", marginBottom:2 }}>{r.title}</div>
+                    <div style={{ fontSize:11, color:C.muted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.text}</div>
+                  </div>
+                  <div style={{ display:"flex", gap:4, flexShrink:0 }}>
+                    <button onClick={() => useReply(r.text)}
+                      style={{ padding:"4px 10px", borderRadius:6, border:"none", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                      Use
+                    </button>
+                    <button onClick={() => startEdit(r)}
+                      style={{ padding:"4px 8px", borderRadius:6, border:"1.5px solid #E2E8F0", background:"#fff", color:C.muted, fontSize:11, cursor:"pointer" }}>
+                      ✏️
+                    </button>
+                    <button onClick={() => deleteReply(r.id)}
+                      style={{ padding:"4px 8px", borderRadius:6, border:"1.5px solid #FEE2E2", background:"#FEF2F2", color:C.red, fontSize:11, cursor:"pointer" }}>
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Reply box */}
-        <div style={{ padding:"14px 20px", borderTop:"1px solid #E2E8F0", background:"#fff" }}>
+        <div style={{ padding:"12px 16px", borderTop:"1px solid #E2E8F0", background:"#fff", flexShrink:0 }}>
           {sendResult && (
-            <div style={{ fontSize:12, color:sendResult.ok?C.green:C.red, marginBottom:8, fontWeight:600 }}>{sendResult.msg}</div>
+            <div style={{ fontSize:12, color:sendResult.ok?C.green:C.red, marginBottom:6, fontWeight:600 }}>{sendResult.msg}</div>
           )}
+          {/* Saved replies toggle */}
+          <button onClick={() => { setShowSavedReplies(!showSavedReplies); setShowAddForm(false); }}
+            style={{ marginBottom:8, padding:"5px 12px", borderRadius:7, border:`1.5px solid ${showSavedReplies?C.accent:"#E2E8F0"}`, background:showSavedReplies?C.accentBg:"#fff", color:showSavedReplies?C.accentText:C.muted, fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
+            💬 Saved Replies {showSavedReplies ? "▲" : "▼"}
+          </button>
           <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
             <textarea
               value={replyText}
@@ -95,15 +216,11 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
               rows={3}
               style={{ flex:1, padding:"10px 12px", borderRadius:10, border:"1.5px solid #E2E8F0", fontSize:13, fontFamily:"inherit", resize:"none", outline:"none", lineHeight:1.5, color:"#0F172A" }}
             />
-            <button
-              onClick={sendReply}
-              disabled={sending || !replyText.trim()}
-              style={{ padding:"10px 16px", borderRadius:10, border:"none", background:sending||!replyText.trim()?"#E2E8F0":C.accent, color:sending||!replyText.trim()?C.muted:"#fff", fontWeight:700, fontSize:13, cursor:sending||!replyText.trim()?"not-allowed":"pointer", whiteSpace:"nowrap", flexShrink:0, height:44 }}
-            >
+            <button onClick={sendReply} disabled={sending || !replyText.trim()}
+              style={{ padding:"10px 14px", borderRadius:10, border:"none", background:sending||!replyText.trim()?"#E2E8F0":C.accent, color:sending||!replyText.trim()?C.muted:"#fff", fontWeight:700, fontSize:13, cursor:sending||!replyText.trim()?"not-allowed":"pointer", whiteSpace:"nowrap", flexShrink:0, height:44 }}>
               {sending ? "Sending…" : "Send 📤"}
             </button>
           </div>
-          <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>💡 Mato-track sa Messenger inbox mo bilang "replied"</div>
         </div>
       </div>
     </>
