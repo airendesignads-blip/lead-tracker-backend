@@ -1,7 +1,6 @@
 // app/api/messenger/send/route.js
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 
 export async function POST(req) {
   try {
@@ -11,19 +10,18 @@ export async function POST(req) {
       return NextResponse.json({ error: "leadId at message ay required." }, { status: 400 });
     }
 
-    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-    if (!lead) {
-      return NextResponse.json({ error: "Lead not found." }, { status: 404 });
+    if (!process.env.FB_PAGE_ACCESS_TOKEN) {
+      return NextResponse.json({ error: "FB_PAGE_ACCESS_TOKEN is not set sa environment variables." }, { status: 500 });
     }
 
-    // lead.id = Facebook PSID ng customer (based sa schema)
+    // leadId = Facebook PSID ng customer
     const fbRes = await fetch(
       `https://graph.facebook.com/v21.0/me/messages?access_token=${process.env.FB_PAGE_ACCESS_TOKEN}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recipient:      { id: lead.id },
+          recipient:      { id: leadId },
           message:        { text: message.trim() },
           messaging_type: "RESPONSE",
         }),
@@ -40,16 +38,22 @@ export async function POST(req) {
       );
     }
 
-    // I-log sa Activity table — type="manual_reply", note=yung message
-    await prisma.activity.create({
-      data: {
-        leadId:   lead.id,
-        type:     "manual_reply",          // gamit ang existing 'type' field
-        note:     message.trim(),          // gamit ang existing 'note' field
-        aiReply:  message.trim(),          // para makita sa getReplyStatus() as "Replied"
-        createdAt: new Date(),
-      },
-    });
+    // Log sa Activity table — optional, skip kung may prisma error
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      await prisma.activity.create({
+        data: {
+          leadId:    leadId,
+          type:      "manual_reply",
+          note:      message.trim(),
+          aiReply:   message.trim(),
+          createdAt: new Date(),
+        },
+      });
+    } catch (prismaErr) {
+      // Hindi mag-fail ang send kahit mag-error ang prisma logging
+      console.warn("[messenger/send] Prisma log failed (non-fatal):", prismaErr.message);
+    }
 
     return NextResponse.json({ success: true, messageId: fbData.message_id });
 
