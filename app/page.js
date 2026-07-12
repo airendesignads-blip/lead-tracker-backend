@@ -321,6 +321,7 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
 function PaymentModal({ lead, onClose, onSaved }) {
   const [amount, setAmount] = useState("");
   const [mode,   setMode]   = useState(PAYMENT_MODES[0]);
+  const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState(null);
 
@@ -332,7 +333,7 @@ function PaymentModal({ lead, onClose, onSaved }) {
       const res = await fetch(`/api/leads/${lead.id}/payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amt, mode, leadName: lead.name }),
+        body: JSON.stringify({ amount: amt, mode, leadName: lead.name, description: description.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
@@ -357,9 +358,13 @@ function PaymentModal({ lead, onClose, onSaved }) {
 
         <label style={{ fontSize:11.5, fontWeight:700, color:C.muted, display:"block", marginBottom:4 }}>Mode of Payment</label>
         <select value={mode} onChange={e => setMode(e.target.value)}
-          style={{ width:"100%", boxSizing:"border-box", padding:"9px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13.5, fontFamily:"inherit", marginBottom:16, color:"#0F172A", background:"#fff" }}>
+          style={{ width:"100%", boxSizing:"border-box", padding:"9px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13.5, fontFamily:"inherit", marginBottom:12, color:"#0F172A", background:"#fff" }}>
           {PAYMENT_MODES.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
+
+        <label style={{ fontSize:11.5, fontWeight:700, color:C.muted, display:"block", marginBottom:4 }}>Description / Items (optional)</label>
+        <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="hal. 20pcs Customized Cap, Cuff & Collar..." rows={3}
+          style={{ width:"100%", boxSizing:"border-box", padding:"9px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13.5, fontFamily:"inherit", marginBottom:16, color:"#0F172A", resize:"vertical" }} />
 
         {error && <div style={{ fontSize:12, color:C.red, marginBottom:10, fontWeight:600 }}>{error}</div>}
 
