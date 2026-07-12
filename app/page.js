@@ -25,7 +25,8 @@ const dot = (color) => (
   <span style={{ width:6, height:6, borderRadius:"50%", background:color, display:"inline-block", flexShrink:0 }} />
 );
 
-// ── DEFAULT SAVED REPLIES ─────────────────────────────────────────────────────
+const PAYMENT_MODES = ["Cash", "GCash", "BDO", "PayPal", "PayMaya", "Bank Transfer"];
+
 // ── DEFAULT SAVED REPLIES ─────────────────────────────────────────────────────
 const DEFAULT_REPLIES = [
   { id:"1", title:"Welcome",        text:"Salamat sa iyong message! Sandali lang ha. 😊" },
@@ -316,6 +317,67 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
   );
 }
 
+// ── PAYMENT MODAL ─────────────────────────────────────────────────────────
+function PaymentModal({ lead, onClose, onSaved }) {
+  const [amount, setAmount] = useState("");
+  const [mode,   setMode]   = useState(PAYMENT_MODES[0]);
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState(null);
+
+  const save = async () => {
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) { setError("Ilagay ang tamang halaga."); return; }
+    setSaving(true); setError(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/payment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: amt, mode, leadName: lead.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Save failed");
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:60 }} />
+      <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", background:"#fff", borderRadius:14, padding:24, width:340, zIndex:70, boxShadow:"0 16px 48px rgba(0,0,0,0.3)" }}>
+        <div style={{ fontWeight:800, fontSize:16, color:"#0F172A", marginBottom:4 }}>💰 Add Payment</div>
+        <div style={{ fontSize:12.5, color:C.muted, marginBottom:16 }}>{lead.name}</div>
+
+        <label style={{ fontSize:11.5, fontWeight:700, color:C.muted, display:"block", marginBottom:4 }}>Amount</label>
+        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00"
+          style={{ width:"100%", boxSizing:"border-box", padding:"9px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13.5, fontFamily:"inherit", marginBottom:12, color:"#0F172A" }} />
+
+        <label style={{ fontSize:11.5, fontWeight:700, color:C.muted, display:"block", marginBottom:4 }}>Mode of Payment</label>
+        <select value={mode} onChange={e => setMode(e.target.value)}
+          style={{ width:"100%", boxSizing:"border-box", padding:"9px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13.5, fontFamily:"inherit", marginBottom:16, color:"#0F172A", background:"#fff" }}>
+          {PAYMENT_MODES.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+
+        {error && <div style={{ fontSize:12, color:C.red, marginBottom:10, fontWeight:600 }}>{error}</div>}
+
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={onClose} disabled={saving}
+            style={{ flex:1, padding:10, borderRadius:8, border:"1.5px solid #E2E8F0", background:"#F8FAFC", color:"#0F172A", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+            Cancel
+          </button>
+          <button onClick={save} disabled={saving}
+            style={{ flex:1, padding:10, borderRadius:8, border:"none", background:saving?"#9CA3AF":C.accent, color:"#fff", fontWeight:700, fontSize:13, cursor:saving?"not-allowed":"pointer" }}>
+            {saving ? "Saving…" : "Save Payment"}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function Dashboard() {
   const [leads,          setLeads]          = useState([]);
   const [loading,        setLoading]        = useState(true);
@@ -330,6 +392,9 @@ export default function Dashboard() {
   const [replyText,      setReplyText]       = useState("");
   const [sending,        setSending]         = useState(false);
   const [sendResult,     setSendResult]      = useState(null);
+  // Payment modal
+  const [paymentLead,    setPaymentLead]     = useState(null);
+  const [paymentToast,   setPaymentToast]    = useState(null);
   const chatEndRef = useRef(null);
 
   const fetchLeads = () => {
@@ -435,6 +500,13 @@ export default function Dashboard() {
     } finally { setUpdatingId(null); }
   };
 
+  const handlePaymentSaved = () => {
+    setPaymentLead(null);
+    setPaymentToast("✅ Payment saved — makikita na rin sa Job Order History/Sales Report.");
+    fetchLeads();
+    setTimeout(() => setPaymentToast(null), 4000);
+  };
+
   const messengerLeads = leads.filter((l) => !l.postId && !doneStages.includes(l.stage));
   const commentLeads   = leads.filter((l) =>  l.postId && !doneStages.includes(l.stage));
   const fbDoneLeads    = leads.filter((l) => l.stage === "Facebook Done");
@@ -538,6 +610,9 @@ export default function Dashboard() {
         {importResult && (
           <div style={{ padding:"10px 28px", fontSize:13, borderBottom:"1px solid #E2E8F0", background:importResult.startsWith("✅")?"#F0FDF4":"#FEF2F2", color:importResult.startsWith("✅")?C.green:C.red }}>{importResult}</div>
         )}
+        {paymentToast && (
+          <div style={{ padding:"10px 28px", fontSize:13, borderBottom:"1px solid #E2E8F0", background:"#F0FDF4", color:C.green }}>{paymentToast}</div>
+        )}
 
         {/* STATS */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, padding:"20px 28px" }}>
@@ -623,15 +698,20 @@ export default function Dashboard() {
                         </td>
                         <td style={{ padding:"12px 16px", fontSize:12, color:C.muted, whiteSpace:"nowrap" }}>{new Date(lead.createdAt).toLocaleDateString()}</td>
                         <td style={{ padding:"12px 16px" }}>
-                          {!isDone ? (
-                            <button onClick={() => markAsDone(lead.id, lead.source)} disabled={isUpdating} style={{ padding:"5px 12px", fontSize:11, fontWeight:700, borderRadius:7, border:"1.5px solid #BBF7D0", background:isUpdating?"#F1F5F9":"#F0FDF4", color:isUpdating?C.muted:C.green, cursor:isUpdating?"not-allowed":"pointer", minWidth:90 }}>
-                              {isUpdating ? "Saving…" : "✓ Mark Done"}
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                            <button onClick={() => setPaymentLead(lead)} style={{ padding:"5px 12px", fontSize:11, fontWeight:700, borderRadius:7, border:"1.5px solid #C7D2FE", background:"#EEF2FF", color:C.accentText, cursor:"pointer", minWidth:90 }}>
+                              💰 Payment
                             </button>
-                          ) : (
-                            <button onClick={() => markAsActive(lead.id)} disabled={isUpdating} style={{ padding:"5px 12px", fontSize:11, fontWeight:700, borderRadius:7, border:"1.5px solid #E2E8F0", background:"#F1F5F9", color:C.muted, cursor:isUpdating?"not-allowed":"pointer", minWidth:90 }}>
-                              {isUpdating ? "Saving…" : "↩ Reopen"}
-                            </button>
-                          )}
+                            {!isDone ? (
+                              <button onClick={() => markAsDone(lead.id, lead.source)} disabled={isUpdating} style={{ padding:"5px 12px", fontSize:11, fontWeight:700, borderRadius:7, border:"1.5px solid #BBF7D0", background:isUpdating?"#F1F5F9":"#F0FDF4", color:isUpdating?C.muted:C.green, cursor:isUpdating?"not-allowed":"pointer", minWidth:90 }}>
+                                {isUpdating ? "Saving…" : "✓ Mark Done"}
+                              </button>
+                            ) : (
+                              <button onClick={() => markAsActive(lead.id)} disabled={isUpdating} style={{ padding:"5px 12px", fontSize:11, fontWeight:700, borderRadius:7, border:"1.5px solid #E2E8F0", background:"#F1F5F9", color:C.muted, cursor:isUpdating?"not-allowed":"pointer", minWidth:90 }}>
+                                {isUpdating ? "Saving…" : "↩ Reopen"}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -655,6 +735,15 @@ export default function Dashboard() {
         chatEndRef={chatEndRef}
         getReplyStatus={getReplyStatus}
       />
+
+      {/* PAYMENT MODAL */}
+      {paymentLead && (
+        <PaymentModal
+          lead={paymentLead}
+          onClose={() => setPaymentLead(null)}
+          onSaved={handlePaymentSaved}
+        />
+      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
