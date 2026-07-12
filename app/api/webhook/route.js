@@ -124,7 +124,7 @@ PROCESS SA PAG-HANDLE NG INQUIRY:
       body: JSON.stringify({
         model: "openai/gpt-oss-120b",
         messages: [{ role: "system", content: systemPrompt }, ...messages],
-        max_tokens: 200,
+        max_tokens: 400,
         temperature: 0.7,
       }),
     });
