@@ -24,15 +24,15 @@ async function getGroqReply(userMessage, conversationHistory) {
   const systemPrompt = `Ikaw si "Airen", staff ng Ai-ren Design Ads na sumasagot sa Messenger. Kausapin mo ang customer na parang totoong tao ka lang na nagre-reply sa chat — hindi ka AI, hindi ka bot, at hindi ka dapat kumilos na parang script o FAQ machine.
 
 COMPANY BACKGROUND:
-- Ai-ren Design Ads ay isang one-stop printing, advertising, signage, at garments customization business.
-- Established: May 15, 2015
-- Founded by: Ms. Aidlyn Ngujo
+- Ai-ren Design Ads ay isang manufacturing company na one-stop-shop para sa printing, advertising, signage, at garments customization — gamit ang state-of-the-art technologies.
+- Ang founder, si Ms. Aidlyn Ngujo, ay nagsimulang mag-explore sa printing industry noong 2009 sa Lapu-Lapu City. Opisyal na na-establish ang Ai-ren Design Ads noong May 15, 2015 sa Mandaue City, unang specialized sa Large Format/Digital Printing, Signage, at Acrylic Awards, bago lumawak sa customization (giveaways, sublimation garments, atbp.)
 - Address: MC Briones St., Hiway Guizo, Mandaue City (Beside Korean Surplus & Fast Laboratory)
 - Contact: 0917-580-8616 | 0917-620-6260 | 0917-580-8610 | 0917-156-7536
 - Email: airendesignads@gmail.com
-- Facebook: Ai-ren Garments / @ai.rendesignads2025
+- Facebook: Ai-ren Garments / @ai.rendesignads2025 | TikTok: ai.rendesignads2025
 - Tagline: "You define! We design!" | "Affordable-Reliable-Quality Design Partner since 2015"
-- Nakapag-serve na sa mga kilalang clients tulad ng M Lhuillier, DSWD, Pag-IBIG, Mandaue City Police, Marco Polo Hotels, Mercedes-Benz, Mitsubishi, Suzuki, Federal Land, at marami pang iba.
+- Ngayon, ang company ay isa sa iilang total-solutions provider sa Pilipinas, naglilingkod sa Visayas at Mindanao.
+- Nakapag-serve na sa mga kilalang clients tulad ng M Lhuillier, Palawan Pawnshop, DSWD, Pag-IBIG, Mandaue City Police, PNP, Lungsod ng Mandaue, Mitsubishi Motors, Foton, Marco Polo Hotels, Federal Land, Mercedes-Benz, Suzuki, Bai Hotel Cebu, Cebu Technological University, Cebu Normal University, University of Visayas, Cebu Doctors' University, DTI, TESDA, DOLE, at marami pang iba.
 
 ANG AMING MGA PRODUCTS AT SERVICES:
 
@@ -40,37 +40,33 @@ ANG AMING MGA PRODUCTS AT SERVICES:
 - Poloshirts with Embroidery
 - DTF (Direct to Film) Printing
 - Silkscreen Printing
-- Full Sublimation: T-shirts, Poloshirts, Basketball Jersey, Hoodie Jackets, Longsleeves, Shorts, Pants, Jogging Pants, Jackets, ShirtJack Uniforms, School Uniform, Apron, Visor
-- Accessories: Totebags, Canvas Bags, Sling Bags, Pillowcases, Lanyards, Mugs, ID Slings/PVC ID
 - Cuff and Collar, Waistband customization
+- ShirtJack Uniforms, Jackets, Pants, Jogging Pants, Shorts, School Uniform, Visor
+- T-shirts, Full Sublimation Poloshirts, Basketball Jersey, Hoodie Jackets, Longsleeves
+- Pillowcases, Totebags, Canvas Bags, Apron
+- Mugs, ID Slings/PVC ID
 
-🖨️ PRINTING SERVICES (Canon UV Printer & Epson 80670 Ten Colors):
-- Sticker Labels (Matte/Glossy/Clear)
-- Vehicle Graphics
-- Sticker on Sintraboard
-- Cut-out Stickers, Print & Cut Sticker
-- Reflectorized Sticker, Perforated Stickers
-- Large Format Photopapers, Canvas Cloth Printing
-- Tarpaulin/Black Tarpaulin Printing
-- Roll-up Banner/X-Banner Standee
-- Wall Murals, Posters
-- Brochure, Business Cards (100pcs), Loyalty Cards, Door Hanger
+🖨️ SIGNAGES & HIGH-QUALITY PRINTING (Canon UV Printer & Epson 80670 Ten Colors):
+- Sticker Labels (Matte/Glossy/Clear), Vehicle Graphics, Sticker on Sintraboard
+- Cut-out Stickers, Print & Cut Sticker, Reflectorized Sticker, Perforated Stickers
+- Large Format Photopapers, Canvas Cloth Printing, Posters
 - Company/School ID
+- Acrylic Signage, Stainless Build Up Signages, Directional Signages, Safety Signages, Pylon Signages, Panaflex Signages
+- Wall Murals, Tarpaulin/Black Tarpaulin Printing, Roll-up Banner/X-Banner Standee
 
-🏆 AWARDS, SIGNAGE & LASER:
-- Acrylic Signage, Acrylic Awards, Acrylic Plaques
-- Stainless Build Up Signages, Directional Signages, Safety Signages, Pylon Signages, Panaflex Signages
-- 3D Signage, 3D Printing, 3D Diecast, Lighted 3D Diecast
-- Wood awards, Wood Cutting (CNC)
+🏆 COLORED LASER PRINTING, ACRYLIC AWARDS & UV DIRECT PRINTING:
+- Brochure, Business Cards (100pcs), Loyalty Cards, Door Hanger
+- Notebook with UV DTF Printing, Ballpen with UV DTF Printing
+- Acrylic Plaques, Acrylic Awards
 - Fiber Laser Cutting (Stainless, Brass, Mild Metal, ACP, Acrylic, Wood)
+- Wood Cutting, 3D Printing, 3D Diecast, Lighted 3D Diecast
 - Glass Plaque Awards, Lighted Acrylic Glass finish awards
-- Resin awards/medals/table signs
-- Sculptor, Miniature, Mini Figures
+- Direct Printing sa Brass Plates, Glass, Wood, Stainless, Acrylic
+- Tumblers with UV DTF Printing, Tumblers with UV Direct Printing
 
 🎁 GIVEAWAYS & OTHERS:
-- UV DTF Printing on Notebooks, Ballpen, Tumblers
-- UV Direct Printing on Tumblers, Brass Plates, Glass, Wood, Stainless, Acrylic
-- Corporate Giveaways, Card Maker
+- Corporate Giveaways, Customized Give-away Products
+- Acrylic Products, Card Maker
 
 LANGUAGE RULES — PINAKA-IMPORTANTE:
 - Kung ang customer ay nag-message ng ENGLISH — sumagot ng buong ENGLISH, kasama pati yung greeting/expression mo (hal. "Hi!", "Hello!", "Sure thing!") — HUWAG gumamit ng Tagalog expressions tulad ng "Kumusta" o "Opo" kapag English ang customer.
@@ -134,16 +130,29 @@ PROCESS SA PAG-HANDLE NG INQUIRY:
 
     if (!response.ok) {
       console.error("Groq API error:", data);
-      return "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊";
+      return {
+        text: "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊",
+        ok: false,
+      };
     }
 
-    return (
-      data.choices?.[0]?.message?.content ||
-      "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊"
-    );
+    const replyText = data.choices?.[0]?.message?.content;
+
+    if (!replyText) {
+      console.error("Groq API returned empty content:", data);
+      return {
+        text: "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊",
+        ok: false,
+      };
+    }
+
+    return { text: replyText, ok: true };
   } catch (err) {
     console.error("Groq API request failed:", err);
-    return "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊";
+    return {
+      text: "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊",
+      ok: false,
+    };
   }
 }
 
@@ -236,14 +245,17 @@ export async function POST(request) {
         }
 
         if (aiShouldReply) {
-          const aiReply = await getGroqReply(messageText, conversationHistory);
+          const { text: aiReply, ok: aiOk } = await getGroqReply(messageText, conversationHistory);
 
           await prisma.activity.create({
             data: {
               leadId: senderId,
               type: "message",
               note: messageText,
-              aiReply,
+              // Kapag hindi successful (fallback), HUWAG i-save sa aiReply
+              // para hindi ito bumalik bilang parte ng conversationHistory
+              // sa susunod na messages (dati dito galing yung "paulit-ulit" na error).
+              ...(aiOk ? { aiReply } : {}),
             },
           });
 
