@@ -584,7 +584,6 @@ export default function Dashboard() {
         <NavItem icon="✅" label="FB Done"     count={fbDoneLeads.length}    tab="facebook-done"/>
         <NavItem icon="📧" label="Email Done"  count={emailDoneLeads.length} tab="email-done"   />
         <div style={{ marginTop:"auto", paddingTop:16, borderTop:`1px solid ${C.surface}` }}>
-          <a href="https://airendesignads.com/job-orders.html" style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, color:C.muted, fontSize:13, fontWeight:500, textDecoration:"none" }}>← Back to JO</a>
           <a href="/import" style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, color:C.muted, fontSize:13, fontWeight:500, textDecoration:"none" }}>➕ Import Leads</a>
         </div>
       </aside>
@@ -620,6 +619,9 @@ export default function Dashboard() {
                 Auto-refreshes every 5 seconds
               </div>
             </div>
+            <a href="https://airendesignads.com/job-orders.html" style={{ padding:"9px 16px", borderRadius:8, fontSize:12, fontWeight:700, border:"1.5px solid #E2E8F0", background:"#fff", color:"#0F172A", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0, textDecoration:"none" }}>
+              ← Back to JO
+            </a>
             <button onClick={importComments} disabled={importing} style={{ padding:"9px 16px", borderRadius:8, fontSize:12, fontWeight:700, border:"none", cursor:importing?"not-allowed":"pointer", background:importing?"#9CA3AF":C.accent, color:"#fff", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}>
               📘 {importing ? "Importing…" : "Import FB Comments"}
             </button>
