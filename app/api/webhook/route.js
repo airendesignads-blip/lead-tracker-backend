@@ -17,7 +17,8 @@ function shouldAIReply(lead) {
   const now = new Date();
   const minutesSinceHumanReply =
     (now - new Date(lead.lastHumanReply)) / 1000 / 60;
-  return minutesSinceHumanReply >= 1;
+  // Pinalaki mula 1 minuto -> 5 minuto para may buffer bago mag-auto-reply ulit ang AI
+  return minutesSinceHumanReply >= 5;
 }
 
 async function getGroqReply(userMessage, conversationHistory) {
@@ -192,14 +193,29 @@ export async function POST(request) {
       const messageText = event.message?.text;
       const isEcho = event.message?.is_echo;
 
+      // FIX #1: Kapag human agent (page admin) ang sumagot sa Messenger (echo event),
+      // i-save na natin yung ACTUAL na content ng sagot niya bilang activity,
+      // hindi lang yung timestamp. Kung hindi ito ise-save, mawawala ito sa
+      // conversationHistory at hindi malalaman ng AI kung ano na yung
+      // huling tinutukoy/na-establish na sa usapan (e.g. "vehicle graphics")
+      // kaya nagkakamali ito ng context sa mga susunod na sagot (hallucination).
       if (isEcho && senderId) {
         try {
+          await prisma.activity.create({
+            data: {
+              leadId: senderId,
+              type: "message",
+              note: "", // walang bagong customer message dito, echo lang ng human reply
+              aiReply: messageText || "",
+            },
+          });
+
           await prisma.lead.update({
             where: { id: senderId },
             data: { lastHumanReply: new Date() },
           });
         } catch (err) {
-          console.error("Error updating lastHumanReply:", err);
+          console.error("Error saving human reply / updating lastHumanReply:", err);
         }
         continue;
       }
@@ -216,18 +232,31 @@ export async function POST(request) {
 
         const aiShouldReply = shouldAIReply(lead);
 
+        // FIX #2: dating orderBy: "asc" + take: 10 ay kinukuha yung PINAKALUMANG
+        // 10 messages sa buong history ng lead, hindi yung pinakabago. Kaya kapag
+        // lumagpas na sa 10 messages yung total na usapan, palagi na lang "stuck"
+        // yung AI sa unang mga message at nawawala yung kasalukuyang konteksto.
+        // Fix: kunin yung pinakahuling 10 (desc), tapos i-reverse papunta sa
+        // tamang pagkakasunod-sunod (chronological) bago ipasa sa AI.
         const previousActivities = await prisma.activity.findMany({
           where: { leadId: senderId, type: "message" },
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: "desc" },
           take: 10,
         });
+        previousActivities.reverse();
 
         const conversationHistory = previousActivities
-          .map((activity) => [
-            { role: "user", content: activity.note },
-            { role: "assistant", content: activity.aiReply || "" },
-          ])
-          .flat();
+          .flatMap((activity) => {
+            const entries = [];
+            // note pwedeng blangko kapag echo/human-reply-only na entry (walang bagong customer msg)
+            if (activity.note) {
+              entries.push({ role: "user", content: activity.note });
+            }
+            if (activity.aiReply) {
+              entries.push({ role: "assistant", content: activity.aiReply });
+            }
+            return entries;
+          });
 
         try {
           await prisma.lead.upsert({
