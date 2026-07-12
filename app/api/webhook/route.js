@@ -20,8 +20,15 @@ function shouldAIReply(lead) {
   return secondsSinceHumanReply >= 20;
 }
 
-async function getGroqReply(userMessage, conversationHistory) {
+async function getGroqReply(userMessage, conversationHistory, allowGreeting) {
+  const greetingRule = allowGreeting
+    ? `- Dahil matagal na (isang linggo o higit pa) o unang usapan pa lang ito, pwede kang mag-greeting expression kung angkop (hal. "Kumusta!", "Hi!", "Hello!") base sa language ng customer.`
+    : `- HUWAG GUMAMIT NG GREETING EXPRESSIONS tulad ng "Kumusta!", "Hi!", "Hello!" — ONGOING na o kamakailan lang kayo nag-usap ng customer na ito, kaya diretso ka na sa sagot ng tanong niya, parang normal lang na tuloy-tuloy na chat.`
+
   const systemPrompt = `Ikaw si "Airen", staff ng Ai-ren Design Ads na sumasagot sa Messenger. Kausapin mo ang customer na parang totoong tao ka lang na nagre-reply sa chat — hindi ka AI, hindi ka bot, at hindi ka dapat kumilos na parang script o FAQ machine.
+
+GREETING RULE PARA SA USAPANG ITO:
+${greetingRule}
 
 COMPANY BACKGROUND:
 - Ai-ren Design Ads ay isang manufacturing company na one-stop-shop para sa printing, advertising, signage, at garments customization — gamit ang state-of-the-art technologies.
@@ -94,7 +101,7 @@ PAANO KA DAPAT KUMILOS PARA PARANG TOTOONG TAO:
 
 PROCESS SA PAG-HANDLE NG INQUIRY:
 1. I-detect ang language ng customer — sundan ang language nila.
-2. Kung greeting lang siya (hi, hello, hoy, kumusta, naa ba mo) — sumagot nang kaswal at friendly, parang totoong tao na sumasagot sa chat, tapos itanong kung ano ang kailangan niya. Iba-ibahin ang pananalita, isang beses lang mag-greet.
+2. Kung greeting lang siya (hi, hello, hoy, kumusta, naa ba mo) — sumagot nang kaswal at friendly, parang totoong tao na sumasagot sa chat, tapos itanong kung ano ang kailangan niya. SUNDIN ang GREETING RULE sa itaas kung kailan pwede o hindi pwede gumamit ng greeting expressions.
 3. Kung nagtatanong ng presyo — HUWAG MAGBIGAY NG KAHIT ANONG NUMERO O PRESYO, kahit pa "starting at", "estimate", o "range" (hal. "₱600 each", "mga ₱500-800", atbp.) — BAWAL ITO KAHIT ANONG SITWASYON. Ang presyo ay ibibigay lamang ng totoong staff/representative (hindi ng AI). Sa halip, kunin muna ang mga detalye ng order nang natural (hindi laging parang listahan), tapos sabihin na si Ate Che, Mam Edz, o Sir Manuel na ang bahalang mag-quote ng tamang presyo — sila lang ang dapat banggitin, walang iba:
    📋 Product/Item
    📐 Size
@@ -262,6 +269,17 @@ export async function POST(request) {
             return entries;
           });
 
+        // Greeting rule: bagong usapan pa lang (walang history) o lumipas na ng
+        // isang linggo (7+ days) mula sa huling activity ng lead -> pwede mag-greet.
+        // Kung ongoing/kamakailan lang nag-usap -> huwag na mag-greeting expressions.
+        let allowGreeting = true;
+        if (previousActivities.length > 0) {
+          const lastActivity = previousActivities[previousActivities.length - 1];
+          const daysSinceLastActivity =
+            (new Date() - new Date(lastActivity.createdAt)) / (1000 * 60 * 60 * 24);
+          allowGreeting = daysSinceLastActivity >= 7;
+        }
+
         try {
           await prisma.lead.upsert({
             where: { id: senderId },
@@ -278,7 +296,7 @@ export async function POST(request) {
         }
 
         if (aiShouldReply) {
-          const { text: aiReply, ok: aiOk } = await getGroqReply(messageText, conversationHistory);
+          const { text: aiReply, ok: aiOk } = await getGroqReply(messageText, conversationHistory, allowGreeting);
 
           await prisma.activity.create({
             data: {
