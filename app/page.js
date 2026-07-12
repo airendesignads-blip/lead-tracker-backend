@@ -470,6 +470,18 @@ export default function Dashboard() {
 
   const doneStages = ["Facebook Done", "Email Done", "Done"];
 
+  const timeSince = (iso) => {
+    if (!iso) return "";
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "ngayon lang";
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d`;
+  };
+
   const getReplyStatus = (lead) => {
     const acts = lead.activities || [];
     if (!acts.length) return { label: "No Message", color: C.muted, bg: "#F1F5F9" };
@@ -481,8 +493,9 @@ export default function Dashboard() {
     // na direktang sumagot sa Messenger app mismo (echo event, walang bagong
     // customer note kasama) — pareho itong tunay na tao ang sumagot.
     const isAdminReply = last.type === "manual_reply" || (last.type === "message" && !last.note);
-    if (isAdminReply) return { label: "Replied by Admin", color: C.blue, bg: C.blueBg };
-    return { label: "Replied by AI", color: C.green, bg: C.greenBg };
+    const noReplyFrom = last.createdAt; // simula kailan tahimik na ang customer
+    if (isAdminReply) return { label: "Replied by Admin", color: C.blue, bg: C.blueBg, noReplyFrom };
+    return { label: "Replied by AI", color: C.green, bg: C.greenBg, noReplyFrom };
   };
 
   const openPanel = (lead) => { setSelectedLead(lead); setReplyText(""); setSendResult(null); };
@@ -697,9 +710,14 @@ export default function Dashboard() {
                         <td style={{ padding:"12px 16px", fontSize:12, color:"#475569" }}>{stage}</td>
                         <td style={{ padding:"12px 16px" }}>{pill(heatCfg.bg, heatCfg.color, <>{heatCfg.icon} {lead.heat}</>)}</td>
                         <td style={{ padding:"12px 16px" }}>
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:status.bg, color:status.color, padding:"4px 10px", borderRadius:999, fontSize:11, fontWeight:700 }}>
-                            {dot(status.color)} {status.label}
-                          </span>
+                          <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                            <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:status.bg, color:status.color, padding:"4px 10px", borderRadius:999, fontSize:11, fontWeight:700, width:"fit-content" }}>
+                              {dot(status.color)} {status.label}
+                            </span>
+                            {status.noReplyFrom && (
+                              <span style={{ fontSize:10, color:C.muted }}>😴 Walang tugon ang customer ({timeSince(status.noReplyFrom)})</span>
+                            )}
+                          </div>
                         </td>
                         <td style={{ padding:"12px 16px", fontSize:12, color:C.muted, whiteSpace:"nowrap" }}>{new Date(lead.createdAt).toLocaleDateString()}</td>
                         <td style={{ padding:"12px 16px" }}>
