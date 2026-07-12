@@ -20,7 +20,7 @@ function shouldAIReply(lead) {
   return secondsSinceHumanReply >= 20;
 }
 
-async function getGroqReply(userMessage, conversationHistory, allowGreeting) {
+async function getGroqReply(userMessage, conversationHistory, allowGreeting, attempt = 1) {
   const greetingRule = allowGreeting
     ? `- Dahil matagal na (isang linggo o higit pa) o unang usapan pa lang ito, pwede kang mag-greeting expression kung angkop (hal. "Kumusta!", "Hi!", "Hello!") base sa language ng customer.`
     : `- HUWAG GUMAMIT NG GREETING EXPRESSIONS tulad ng "Kumusta!", "Hi!", "Hello!" — ONGOING na o kamakailan lang kayo nag-usap ng customer na ito, kaya diretso ka na sa sagot ng tanong niya, parang normal lang na tuloy-tuloy na chat.`
@@ -153,6 +153,14 @@ PROCESS SA PAG-HANDLE NG INQUIRY:
 
     if (!response.ok) {
       console.error("Groq API error:", data);
+      // Rate limit — subukan ulit pagkatapos ng maikling hintay, hanggang 3 beses,
+      // bago mag-fallback sa generic error message.
+      const isRateLimit = response.status === 429 || data?.error?.message?.toLowerCase().includes("rate limit");
+      if (isRateLimit && attempt < 3) {
+        const waitMs = attempt * 1500; // 1.5s, 3s
+        await new Promise((r) => setTimeout(r, waitMs));
+        return getGroqReply(userMessage, conversationHistory, allowGreeting, attempt + 1);
+      }
       return {
         text: "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊",
         ok: false,
