@@ -13,15 +13,9 @@ function getPHHour() {
 // Dapat bang mag-reply ang AI?
 function shouldAIReply(lead) {
   const hour = getPHHour();
-
-  // 6PM hanggang 9AM — AI lahat
   const isNightTime = hour >= 18 || hour < 9;
   if (isNightTime) return true;
-
-  // Kung walang human reply pa — AI agad
   if (!lead?.lastHumanReply) return true;
-
-  // Kung higit 1 minute na walang human reply — AI na
   const now = new Date();
   const minutesSinceHumanReply =
     (now - new Date(lead.lastHumanReply)) / 1000 / 60;
@@ -97,7 +91,7 @@ Para sa exact na quotation — sasagutin ng aming team as soon as possible.`,
       Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       messages,
       max_tokens: 200,
       temperature: 0.8,
@@ -148,7 +142,6 @@ export async function POST(request) {
       const messageText = event.message?.text;
       const isEcho = event.message?.is_echo;
 
-      // Kung echo — nag-reply ang HUMAN — i-update ang lastHumanReply
       if (isEcho && senderId) {
         try {
           await prisma.lead.update({
@@ -167,12 +160,10 @@ export async function POST(request) {
           ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
           : "Facebook Lead";
 
-        // Kunin ang existing lead
         let lead = await prisma.lead.findUnique({
           where: { id: senderId },
         });
 
-        // I-check kung dapat mag-reply ang AI
         const aiShouldReply = shouldAIReply(lead);
 
         const previousActivities = await prisma.activity.findMany({
@@ -188,7 +179,6 @@ export async function POST(request) {
           ])
           .flat();
 
-        // I-save ang lead at message
         try {
           await prisma.lead.upsert({
             where: { id: senderId },
@@ -218,7 +208,6 @@ export async function POST(request) {
 
           await sendMessengerReply(senderId, aiReply);
         } else {
-          // Hindi mag-rereplly ang AI — human ang bahala
           await prisma.activity.create({
             data: {
               leadId: senderId,
