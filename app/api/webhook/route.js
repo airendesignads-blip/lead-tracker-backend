@@ -3,20 +3,46 @@ import prisma from "@/lib/prisma";
 
 const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
 
+// Check kung PH time (UTC+8)
+function getPHHour() {
+  const now = new Date();
+  const phTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  return phTime.getUTCHours();
+}
+
+// Dapat bang mag-reply ang AI?
+function shouldAIReply(lead) {
+  const hour = getPHHour();
+
+  // 6PM hanggang 9AM — AI lahat
+  const isNightTime = hour >= 18 || hour < 9;
+  if (isNightTime) return true;
+
+  // Kung walang human reply pa — AI agad
+  if (!lead?.lastHumanReply) return true;
+
+  // Kung higit 1 minute na walang human reply — AI na
+  const now = new Date();
+  const minutesSinceHumanReply =
+    (now - new Date(lead.lastHumanReply)) / 1000 / 60;
+  return minutesSinceHumanReply >= 1;
+}
+
 async function getGroqReply(userMessage, conversationHistory) {
   const messages = [
     {
       role: "system",
-      content: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng graphic design, social media management, at digital marketing.
+      content: `Ikaw si "Airen", isang friendly sales assistant ng Ai-ren Design Ads — isang negosyo na nag-aalok ng custom printing, signage, garments, giveaways, stickers, tarpaulins, acrylic works, 3D awards, at iba pang advertising needs.
 
 Sundin ang mga rules na ito:
 - Huwag mag-mention na ikaw ay AI o bot — parang tao ka talaga.
 - I-detect ang language ng customer — kung Bisaya mag-Bisaya ka, kung Tagalog mag-Tagalog, kung English mag-English.
 - Kung "hi", "hello", "hoy", "kumusta", "uy", "naa ba mo" o katulad ang message — mag-greet back ng masaya at itanong kung ano ang maitutulong mo.
-- Kung nagtatanong ng services o presyo — ipaliwanag ang graphic design, social media management, at digital marketing services.
-- Kung interesado sila — subukang kunin ang kanilang pangalan at contact number.
+- Kung nagtatanong ng services o presyo — ipaliwanag ang aming products at services.
+- Kung interesado sila — subukang kunin ang kanilang: Product/Item, Size, Quantity, Design reference, Target date, Pickup or delivery.
 - Maging masaya, friendly, natural, at helpful lagi.
-- Huwag mag-reply ng mahabang paragraph — short and natural lang tulad ng totoong chat.`,
+- Huwag mag-reply ng mahabang paragraph — short and natural lang tulad ng totoong chat.
+- You define, we design!`,
     },
     ...conversationHistory,
     { role: "user", content: userMessage },
@@ -37,7 +63,10 @@ Sundin ang mga rules na ito:
   });
 
   const data = await response.json();
-  return data.choices?.[0]?.message?.content || "Salamat sa iyong message! Sandali lang ha. 😊";
+  return (
+    data.choices?.[0]?.message?.content ||
+    "Salamat sa iyong message! Sandali lang ha. 😊"
+  );
 }
 
 async function getPostTitle(postId) {
@@ -77,11 +106,32 @@ export async function POST(request) {
       const messageText = event.message?.text;
       const isEcho = event.message?.is_echo;
 
+      // Kung echo — nag-reply ang HUMAN — i-update ang lastHumanReply
+      if (isEcho && senderId) {
+        try {
+          await prisma.lead.update({
+            where: { id: senderId },
+            data: { lastHumanReply: new Date() },
+          });
+        } catch (err) {
+          console.error("Error updating lastHumanReply:", err);
+        }
+        continue;
+      }
+
       if (!isEcho && senderId && messageText) {
         const profile = await getMessengerProfile(senderId);
         const name = profile
           ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
           : "Facebook Lead";
+
+        // Kunin ang existing lead
+        let lead = await prisma.lead.findUnique({
+          where: { id: senderId },
+        });
+
+        // I-check kung dapat mag-reply ang AI
+        const aiShouldReply = shouldAIReply(lead);
 
         const previousActivities = await prisma.activity.findMany({
           where: { leadId: senderId, type: "message" },
@@ -89,11 +139,14 @@ export async function POST(request) {
           take: 10,
         });
 
-        const conversationHistory = previousActivities.map((activity) => [
-          { role: "user", content: activity.note },
-          { role: "assistant", content: activity.aiReply || "" },
-        ]).flat();
+        const conversationHistory = previousActivities
+          .map((activity) => [
+            { role: "user", content: activity.note },
+            { role: "assistant", content: activity.aiReply || "" },
+          ])
+          .flat();
 
+        // I-save ang lead at message
         try {
           await prisma.lead.upsert({
             where: { id: senderId },
@@ -109,13 +162,29 @@ export async function POST(request) {
           console.error("Error saving lead:", err);
         }
 
-        const aiReply = await getGroqReply(messageText, conversationHistory);
+        if (aiShouldReply) {
+          const aiReply = await getGroqReply(messageText, conversationHistory);
 
-        await prisma.activity.create({
-          data: { leadId: senderId, type: "message", note: messageText, aiReply },
-        });
+          await prisma.activity.create({
+            data: {
+              leadId: senderId,
+              type: "message",
+              note: messageText,
+              aiReply,
+            },
+          });
 
-        await sendMessengerReply(senderId, aiReply);
+          await sendMessengerReply(senderId, aiReply);
+        } else {
+          // Hindi mag-rereplly ang AI — human ang bahala
+          await prisma.activity.create({
+            data: {
+              leadId: senderId,
+              type: "message",
+              note: messageText,
+            },
+          });
+        }
       }
     }
 
@@ -127,14 +196,10 @@ export async function POST(request) {
         const commenterName = commentData.sender_name || "Facebook Commenter";
         const commentText = commentData.message || "";
         const postId = commentData.post_id || "";
-        const commentId = commentData.comment_id || "";
 
         if (!commenterId || !commentText) continue;
 
-        // Kunin ang post title
         const postTitle = await getPostTitle(postId);
-
-        // I-save ang commenter bilang lead
         const leadId = `fb_comment_${commenterId}`;
 
         try {
