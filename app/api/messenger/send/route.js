@@ -1,9 +1,12 @@
 // app/api/messenger/send/route.js
 //
-// Sumusubok muna ng RESPONSE (within 24h window)
-// Kung error #10 (outside window), automatic na gagamit ng HUMAN_AGENT tag
-// para makapag-reply kahit lumang conversation
-
+// Sumusubok ng RESPONSE (within 24h window) lang.
+// Kung error #10 (outside window), hindi na natin sinusubukan yong
+// HUMAN_AGENT / ACCOUNT_UPDATE tags — hindi approved ng Meta ang App natin
+// para dito, at delikado gamitin ang ACCOUNT_UPDATE para sa random na reply
+// (pwede ma-restrict ang Page kapag na-misuse ang tag na yun).
+// Sa halip, sinasabi natin sa frontend na "outsideWindow" para doon na lang
+// mag-open ng Facebook Business Messenger para sa manual reply.
 import { NextResponse } from "next/server";
 
 async function sendToMessenger(leadId, message, messagingType, tag = null) {
@@ -13,7 +16,6 @@ async function sendToMessenger(leadId, message, messagingType, tag = null) {
     messaging_type: messagingType,
   };
   if (tag) body.tag = tag;
-
   const res  = await fetch(
     `https://graph.facebook.com/v21.0/me/messages?access_token=${process.env.FB_PAGE_ACCESS_TOKEN}`,
     {
@@ -29,29 +31,22 @@ async function sendToMessenger(leadId, message, messagingType, tag = null) {
 export async function POST(req) {
   try {
     const { leadId, message } = await req.json();
-
     if (!leadId || !message?.trim()) {
       return NextResponse.json({ error: "leadId at message ay required." }, { status: 400 });
     }
-
     if (!process.env.FB_PAGE_ACCESS_TOKEN) {
       return NextResponse.json({ error: "FB_PAGE_ACCESS_TOKEN is not set." }, { status: 500 });
     }
-
     const text = message.trim();
 
-    // ── Step 1: Subukan muna ang normal RESPONSE (within 24h) ──────────────
-    let result = await sendToMessenger(leadId, text, "RESPONSE");
+    // ── Subukan ang normal RESPONSE (within 24h) ──────────────
+    const result = await sendToMessenger(leadId, text, "RESPONSE");
 
-    // ── Step 2: Kung error #10 (outside 24h window), gamitin HUMAN_AGENT ──
+    // ── Kung error #10 (outside 24h window), i-signal sa frontend na
+    //    mag-open na lang ito ng Messenger directly para sa manual reply ──
     if (!result.ok && result.data?.error?.code === 10) {
-      console.log("[messenger/send] Outside 24h window, retrying with HUMAN_AGENT tag...");
-      result = await sendToMessenger(leadId, text, "MESSAGE_TAG", "HUMAN_AGENT");
-    }
-
-    // ── Step 3: Kung error pa rin, subukan UPDATE tag ──────────────────────
-    if (!result.ok && result.data?.error?.code === 10) {
-      result = await sendToMessenger(leadId, text, "MESSAGE_TAG", "ACCOUNT_UPDATE");
+      console.log("[messenger/send] Outside 24h window — signaling frontend to open Messenger.");
+      return NextResponse.json({ outsideWindow: true });
     }
 
     if (!result.ok) {
@@ -77,7 +72,6 @@ export async function POST(req) {
     }
 
     return NextResponse.json({ success: true, messageId: result.data.message_id });
-
   } catch (err) {
     console.error("[messenger/send] Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
