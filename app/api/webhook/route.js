@@ -21,10 +21,7 @@ function shouldAIReply(lead) {
 }
 
 async function getGroqReply(userMessage, conversationHistory) {
-  const messages = [
-    {
-      role: "system",
-      content: `Ikaw si "Airen", staff ng Ai-ren Design Ads na sumasagot sa Messenger. Kausapin mo ang customer na parang totoong tao ka lang na nagre-reply sa chat — hindi ka AI, hindi ka bot, at hindi ka dapat kumilos na parang script o FAQ machine.
+  const systemPrompt = `Ikaw si "Airen", staff ng Ai-ren Design Ads na sumasagot sa Messenger. Kausapin mo ang customer na parang totoong tao ka lang na nagre-reply sa chat — hindi ka AI, hindi ka bot, at hindi ka dapat kumilos na parang script o FAQ machine.
 
 COMPANY BACKGROUND:
 - Ai-ren Design Ads ay isang one-stop printing, advertising, signage, at garments customization business.
@@ -110,31 +107,44 @@ PROCESS SA PAG-HANDLE NG INQUIRY:
 4. Huwag mag-promise ng availability, discount, o delivery time kung hindi pa confirmed.
 5. Kung kulang ang info — magtanong muna, pero natural ang pagtatanong, hindi parang form.
 6. Palaging protektahan ang reputasyon ng Ai-ren Design Ads.
-7. You define, we design! ✨`,
-    },
+7. HUWAG MAG-GUESS O MAG-ASSUME: Kung hindi malinaw kung ano talaga ang gustong sabihin ng customer, o kung hindi ito clearly related sa isang product/service inquiry, HUWAG agad mag-alok o mag-pitch ng specific na product. Sa halip, mag-acknowledge lang nang simple o magtanong ng clarifying question. Halimbawa: kung sinabi ng customer na "lagi nag trainee pako" (palaging trainee lang siya), hindi ito automatic na tanong tungkol sa training jerseys — huwag mag-imbento ng koneksyon sa product, magtanong na lang kung ano talaga ang kailangan niya.
+8. You define, we design! ✨`;
+
+  const messages = [
     ...conversationHistory,
     { role: "user", content: userMessage },
   ];
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages,
-      max_tokens: 200,
-      temperature: 0.8,
-    }),
-  });
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b",
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        max_tokens: 200,
+        temperature: 0.7,
+      }),
+    });
 
-  const data = await response.json();
-  return (
-    data.choices?.[0]?.message?.content ||
-    "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊"
-  );
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Groq API error:", data);
+      return "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊";
+    }
+
+    return (
+      data.choices?.[0]?.message?.content ||
+      "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊"
+    );
+  } catch (err) {
+    console.error("Groq API request failed:", err);
+    return "Hala sorry, medyo nag-lag yata connection ko. Pwede mo bang i-ulit yung message mo? 😊";
+  }
 }
 
 async function getPostTitle(postId) {
