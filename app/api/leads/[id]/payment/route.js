@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 
 export async function POST(request, { params }) {
   const { id } = params;
-  const { amount, mode, leadName } = await request.json();
+  const { amount, mode, leadName, description } = await request.json();
 
   if (!amount || Number(amount) <= 0) {
     return Response.json({ error: "Invalid amount" }, { status: 400 });
@@ -19,7 +19,7 @@ export async function POST(request, { params }) {
       data: {
         leadId: id,
         type: "payment",
-        note: `Payment received: ₱${Number(amount).toLocaleString()} via ${mode}`,
+        note: `Payment received: ₱${Number(amount).toLocaleString()} via ${mode}${description ? ` — ${description}` : ""}`,
       },
     });
 
@@ -31,6 +31,7 @@ export async function POST(request, { params }) {
       lead_name: leadName || "Facebook Lead",
       amount: Number(amount),
       mode_of_payment: mode,
+      description: description || null,
       source: "Payment from CRM",
     });
     if (sbError) console.error("Supabase mirror failed:", sbError);
