@@ -477,7 +477,12 @@ export default function Dashboard() {
     if (!last.aiReply) return { label: "Pending Reply", color: C.red, bg: C.redBg };
     const hasNew = acts.some((a) => !a.aiReply && new Date(a.createdAt) > new Date(last.createdAt));
     if (hasNew) return { label: "New Message!", color: C.amber, bg: C.amberBg };
-    return { label: "Replied", color: C.green, bg: C.greenBg };
+    // Kung galing sa "Send" button ng CRM (manual_reply), o galing sa human agent
+    // na direktang sumagot sa Messenger app mismo (echo event, walang bagong
+    // customer note kasama) — pareho itong tunay na tao ang sumagot.
+    const isAdminReply = last.type === "manual_reply" || (last.type === "message" && !last.note);
+    if (isAdminReply) return { label: "Replied by Admin", color: C.blue, bg: C.blueBg };
+    return { label: "Replied by AI", color: C.green, bg: C.greenBg };
   };
 
   const openPanel = (lead) => { setSelectedLead(lead); setReplyText(""); setSendResult(null); };
