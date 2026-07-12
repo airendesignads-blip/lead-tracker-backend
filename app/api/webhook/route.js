@@ -306,11 +306,19 @@ export async function POST(request) {
               leadId: senderId,
               type: "message",
               note: messageText,
+              // Kapag hindi successful (rate limit / API error pagkatapos ng retries),
+              // HUWAG mag-send ng generic/fallback message sa customer — mas mabuti
+              // walang sagot kaysa sa maling o walang-kwentang sagot. Iiwan na lang
+              // itong "Pending Reply" para may kumuha/mag-reply na staff mismo.
               ...(aiOk ? { aiReply } : {}),
             },
           });
 
-          await sendMessengerReply(senderId, aiReply);
+          if (aiOk) {
+            await sendMessengerReply(senderId, aiReply);
+          } else {
+            console.warn(`[webhook] AI reply failed for lead ${senderId} — left as Pending Reply, walang na-send sa customer.`);
+          }
         } else {
           await prisma.activity.create({
             data: {
