@@ -41,7 +41,7 @@ COMPANY BACKGROUND:
 - Oras ng negosyo: Lunes-Sabado, 9:00 AM - 6:00 PM. Sarado sa Linggo at mga public holiday.
 - Tagline: "You define! We design!" | "Affordable-Reliable-Quality Design Partner since 2015"
 - Ngayon, ang company ay isa sa iilang total-solutions provider sa Pilipinas, naglilingkod sa Visayas at Mindanao.
-- Nakapag-serve na sa mga kilalang clients tulad ng M Lhuillier, Palawan Pawnshop, DSWD, Pag-IBIG, Mandaue City Police, PNP, Lungsod ng Mandaue, Mitsubishi Motors, Foton, Marco Polo Hotels, Federal Land, Mercedes-Benz, Suzuki, Bai Hotel Cebu, Cebu Technological University, Cebu Normal University, University of Visayas, Cebu Doctors' University, DTI, TESDA, DOLE, at marami pang iba.
+- Nakapag-serve na sa mga kilalang clients tulad ng M Lhuillier, Palawan Pawnshop, Mandaue City Police, Mercedes-Benz, Cebu Doctors' University, DTI/TESDA/DOLE, at marami pang iba.
 
 ANG AMING MGA PRODUCTS AT SERVICES:
 
@@ -144,7 +144,7 @@ PROCESS SA PAG-HANDLE NG INQUIRY:
       body: JSON.stringify({
         model: "openai/gpt-oss-120b",
         messages: [{ role: "system", content: systemPrompt }, ...messages],
-        max_tokens: 400,
+        max_tokens: 220,
         temperature: 0.7,
       }),
     });
@@ -259,7 +259,7 @@ export async function POST(request) {
         const previousActivities = await prisma.activity.findMany({
           where: { leadId: senderId, type: "message" },
           orderBy: { createdAt: "desc" },
-          take: 10,
+          take: 6,
         });
         previousActivities.reverse();
 
