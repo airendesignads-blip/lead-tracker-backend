@@ -1,31 +1,29 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model Lead {
-  id            String     @id @default(cuid())
-  name          String
-  company       String?
-  email         String?
-  phone         String?
-  value         Float      @default(0)
-  stage         String     @default("Bagong Lead")
-  heat          String     @default("warm")
-  source        String     @default("manual")
-  postId        String?
-  postTitle     String?
-  comment       String?
-  nextFollowUp  DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  activities    Activity[]
+  id             String     @id @default(cuid())
+  name           String
+  company        String?
+  email          String?
+  phone          String?
+  value          Float      @default(0)
+  stage          String     @default("Bagong Lead")
+  heat           String     @default("warm")
+  source         String     @default("manual")
+  postId         String?
+  postTitle      String?
+  comment        String?
+  nextFollowUp   DateTime?
+  lastHumanReply DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  activities     Activity[]
 }
-
 model Activity {
   id        String   @id @default(cuid())
   leadId    String
