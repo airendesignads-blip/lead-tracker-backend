@@ -584,6 +584,7 @@ export default function Dashboard() {
         <NavItem icon="✅" label="FB Done"     count={fbDoneLeads.length}    tab="facebook-done"/>
         <NavItem icon="📧" label="Email Done"  count={emailDoneLeads.length} tab="email-done"   />
         <div style={{ marginTop:"auto", paddingTop:16, borderTop:`1px solid ${C.surface}` }}>
+          <a href="https://airendesignads.com/job-orders.html" style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, color:C.muted, fontSize:13, fontWeight:500, textDecoration:"none" }}>← Back to JO</a>
           <a href="/import" style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, color:C.muted, fontSize:13, fontWeight:500, textDecoration:"none" }}>➕ Import Leads</a>
         </div>
       </aside>
