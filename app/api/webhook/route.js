@@ -92,7 +92,7 @@ LANGUAGE RULES — PINAKA-IMPORTANTE:
 PAANO KA DAPAT KUMILOS PARA PARANG TOTOONG TAO:
 - Sumulat ka na parang nagta-type ka lang mabilis sa Messenger — casual, hindi pormal, hindi parang nag-a-announce.
 - Huwag laging simulan ang reply sa parehong pattern (hal. laging "Salamat sa message mo!"). Mag-iba-iba ng pambungad depende sa sitwasyon — minsan diretso na sa sagot, minsan may maikling reaction muna.
-- Gumamit ng natural na expressions na karaniwang ginagamit sa totoong chat, base sa language ng customer — pero huwag palagi, iba-iba dapat:
+- Gumamit ng natural na expressions na karaniwang ginagamit sa totoong chat, base sa language ng customer, pero huwag palagi, iba-iba dapat:
   • Tagalog: "Hala,", "Ay,", "Opo, meron po kami niyan", "Oo naman!", "Wait lang po ha"
   • English: "Hi!", "Hello!", "Sure thing!", "Oh nice!", "Give me a sec"
   • Bisaya/Cebuano: "Kumusta!", "Naa mi ana!", "Sige lang!", "Wait lang gamay ha"
@@ -101,10 +101,12 @@ PAANO KA DAPAT KUMILOS PARA PARANG TOTOONG TAO:
 - Pwede kang magtanong pabalik nang kaswal, gaya ng normal na usapan — hindi listahan agad ng requirements maliban kung talagang kailangan na para sa quotation.
 - 1-3 short sentences lang per reply — huwag mahaba, huwag parang nag-eessay. Kausap mo lang siya sa Messenger, hindi nagsusulat ng email.
 - Iwasan ang paulit-ulit na parehong sentence structure sa magkakasunod na reply sa iisang usapan.
+- MAHALAGA: BASAHIN MABUTI ANG BUONG MESSAGE NG CUSTOMER BAGO SUMAGOT. Kadalasan, may hiling o tanong na "nakatago" sa loob ng isang mukhang greeting-lang na message (hal. "Hello sana matawagan", "Hi pwede po makausap", "Good day gusto ko sana kausapin kayo") — ito ay HINDI plain greeting lamang, ito ay HILING na tawagan o kausapin sila. HUWAG sumagot ng generic greeting reply (hal. "Kumusta po, anong maitutulong namin?") kapag malinaw namang may specific na hiling na sinabi — diretso kang sumagot sa hiling na yon.
 
 PROCESS SA PAG-HANDLE NG INQUIRY:
 1. I-detect ang language ng customer — sundan ang language nila.
-2. Kung greeting lang siya (hi, hello, hoy, kumusta, naa ba mo) — sumagot nang kaswal at friendly, parang totoong tao na sumasagot sa chat, tapos itanong kung ano ang kailangan niya. SUNDIN ang GREETING RULE sa itaas kung kailan pwede o hindi pwede gumamit ng greeting expressions.
+2. Kung greeting lang siya (hi, hello, hoy, kumusta, naa ba mo) na walang ibang hiling o tanong na kasama — sumagot nang kaswal at friendly, parang totoong tao na sumasagot sa chat, tapos itanong kung ano ang kailangan niya. SUNDIN ang GREETING RULE sa itaas kung kailan pwede o hindi pwede gumamit ng greeting expressions.
+2.5. Kung humihiling ang customer na TAWAGAN sila o makausap sa telepono (hal. "sana matawagan", "pwede ba kayong tumawag", "pwede po ba kayo tumawag sakin", "gusto ko sana ma-contact kayo", "pwede po ba kita ma-call") — DIRETSO mo silang bigyan ng aming contact numbers para matawagan kami: 0917-580-8616, 0917-620-6260, 0917-580-8610, o 0917-156-7536. Sabihin din na pwede rin silang mag-message dito para mabilis. HUWAG gumamit ng generic greeting reply para dito — direkta at helpful ang sagot.
 3. Kung nagtatanong ng presyo — HUWAG MAGBIGAY NG KAHIT ANONG NUMERO O PRESYO, kahit pa "starting at", "estimate", o "range" (hal. "₱600 each", "mga ₱500-800", atbp.) — BAWAL ITO KAHIT ANONG SITWASYON. Ang presyo ay ibibigay lamang ng totoong staff/representative (hindi ng AI). Sa halip, kunin muna ang mga detalye ng order nang natural (hindi laging parang listahan), tapos sabihin na si Ate Che, Mam Edz, o Sir Manuel na ang bahalang mag-quote ng tamang presyo — sila lang ang dapat banggitin, walang iba:
    📋 Product/Item
    📐 Size
@@ -211,19 +213,13 @@ export async function POST(request) {
       const messageText = event.message?.text;
       const isEcho = event.message?.is_echo;
 
-      // FIX #1: Kapag human agent (page admin) ang sumagot sa Messenger (echo event),
-      // i-save na natin yung ACTUAL na content ng sagot niya bilang activity,
-      // hindi lang yung timestamp. Kung hindi ito ise-save, mawawala ito sa
-      // conversationHistory at hindi malalaman ng AI kung ano na yung
-      // huling tinutukoy/na-establish na sa usapan (e.g. "vehicle graphics")
-      // kaya nagkakamali ito ng context sa mga susunod na sagot (hallucination).
       if (isEcho && senderId) {
         try {
           await prisma.activity.create({
             data: {
               leadId: senderId,
               type: "message",
-              note: "", // walang bagong customer message dito, echo lang ng human reply
+              note: "",
               aiReply: messageText || "",
             },
           });
@@ -250,12 +246,6 @@ export async function POST(request) {
 
         const aiShouldReply = shouldAIReply(lead);
 
-        // FIX #2: dating orderBy: "asc" + take: 10 ay kinukuha yung PINAKALUMANG
-        // 10 messages sa buong history ng lead, hindi yung pinakabago. Kaya kapag
-        // lumagpas na sa 10 messages yung total na usapan, palagi na lang "stuck"
-        // yung AI sa unang mga message at nawawala yung kasalukuyang konteksto.
-        // Fix: kunin yung pinakahuling 10 (desc), tapos i-reverse papunta sa
-        // tamang pagkakasunod-sunod (chronological) bago ipasa sa AI.
         const previousActivities = await prisma.activity.findMany({
           where: { leadId: senderId, type: "message" },
           orderBy: { createdAt: "desc" },
@@ -266,7 +256,6 @@ export async function POST(request) {
         const conversationHistory = previousActivities
           .flatMap((activity) => {
             const entries = [];
-            // note pwedeng blangko kapag echo/human-reply-only na entry (walang bagong customer msg)
             if (activity.note) {
               entries.push({ role: "user", content: activity.note });
             }
@@ -276,9 +265,6 @@ export async function POST(request) {
             return entries;
           });
 
-        // Greeting rule: bagong usapan pa lang (walang history) o lumipas na ng
-        // isang linggo (7+ days) mula sa huling activity ng lead -> pwede mag-greet.
-        // Kung ongoing/kamakailan lang nag-usap -> huwag na mag-greeting expressions.
         let allowGreeting = true;
         if (previousActivities.length > 0) {
           const lastActivity = previousActivities[previousActivities.length - 1];
@@ -310,9 +296,6 @@ export async function POST(request) {
               leadId: senderId,
               type: "message",
               note: messageText,
-              // Kapag hindi successful (fallback), HUWAG i-save sa aiReply
-              // para hindi ito bumalik bilang parte ng conversationHistory
-              // sa susunod na messages (dati dito galing yung "paulit-ulit" na error).
               ...(aiOk ? { aiReply } : {}),
             },
           });
