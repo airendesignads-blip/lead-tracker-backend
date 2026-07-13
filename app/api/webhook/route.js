@@ -10,14 +10,17 @@ function getPHHour() {
 }
 
 function shouldAIReply(lead) {
-  const hour = getPHHour();
-  const isNightTime = hour >= 18 || hour < 9;
-  if (isNightTime) return true;
-  if (!lead?.lastHumanReply) return true;
-  const now = new Date();
-  const secondsSinceHumanReply = (now - new Date(lead.lastHumanReply)) / 1000;
-  // 20 seconds na lang na buffer bago pwedeng sumagot ulit ang AI matapos sumagot ang tao
-  return secondsSinceHumanReply >= 20;
+  return false; // 🔴 Groq AI auto-reply DISABLED — testing Botcake muna
+
+  // --- dating logic, naka-comment lang, hindi tinanggal ---
+  // const hour = getPHHour();
+  // const isNightTime = hour >= 18 || hour < 9;
+  // if (isNightTime) return true;
+  // if (!lead?.lastHumanReply) return true;
+  // const now = new Date();
+  // const secondsSinceHumanReply = (now - new Date(lead.lastHumanReply)) / 1000;
+  // // 20 seconds na lang na buffer bago pwedeng sumagot ulit ang AI matapos sumagot ang tao
+  // return secondsSinceHumanReply >= 20;
 }
 
 async function getGroqReply(userMessage, conversationHistory, allowGreeting, attempt = 1) {
