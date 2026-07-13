@@ -27,6 +27,13 @@ const dot = (color) => (
 
 const PAYMENT_MODES = ["Cash", "GCash", "BDO", "PayPal", "PayMaya", "Bank Transfer"];
 
+// ── GCASH RECIPIENTS (for the "Ipinadala kay" dropdown) ───────────────────────
+const GCASH_RECIPIENTS = [
+  { name: "AIDLYN NGUJO",    number: "0917 620 6260" },
+  { name: "SHIBA MAY NGUJO", number: "0917 580 8610" },
+  { name: "ESMECA AN NGUJO", number: "0917 156 7536" },
+];
+
 // ── DEFAULT SAVED REPLIES ─────────────────────────────────────────────────────
 const DEFAULT_REPLIES = [
   { id:"1", title:"Welcome",        text:"Salamat sa iyong message! Sandali lang ha. 😊" },
@@ -322,6 +329,7 @@ function PaymentModal({ lead, onClose, onSaved }) {
   const [amount, setAmount] = useState("");
   const [mode,   setMode]   = useState(PAYMENT_MODES[0]);
   const [description, setDescription] = useState("");
+  const [gcashRecipient, setGcashRecipient] = useState(GCASH_RECIPIENTS[0].name);
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState(null);
 
@@ -333,7 +341,13 @@ function PaymentModal({ lead, onClose, onSaved }) {
       const res = await fetch(`/api/leads/${lead.id}/payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amt, mode, leadName: lead.name, description: description.trim() }),
+        body: JSON.stringify({
+          amount: amt,
+          mode,
+          leadName: lead.name,
+          description: description.trim(),
+          gcashRecipient: mode === "GCash" ? gcashRecipient : null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
@@ -361,6 +375,18 @@ function PaymentModal({ lead, onClose, onSaved }) {
           style={{ width:"100%", boxSizing:"border-box", padding:"9px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13.5, fontFamily:"inherit", marginBottom:12, color:"#0F172A", background:"#fff" }}>
           {PAYMENT_MODES.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
+
+        {mode === "GCash" && (
+          <>
+            <label style={{ fontSize:11.5, fontWeight:700, color:C.muted, display:"block", marginBottom:4 }}>Ipinadala kay</label>
+            <select value={gcashRecipient} onChange={e => setGcashRecipient(e.target.value)}
+              style={{ width:"100%", boxSizing:"border-box", padding:"9px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13.5, fontFamily:"inherit", marginBottom:12, color:"#0F172A", background:"#fff" }}>
+              {GCASH_RECIPIENTS.map(r => (
+                <option key={r.name} value={r.name}>{r.name} — {r.number}</option>
+              ))}
+            </select>
+          </>
+        )}
 
         <label style={{ fontSize:11.5, fontWeight:700, color:C.muted, display:"block", marginBottom:4 }}>Description / Items (optional)</label>
         <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="hal. 20pcs Customized Cap, Cuff & Collar..." rows={3}
