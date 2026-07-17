@@ -517,36 +517,27 @@ export default function Dashboard() {
     const sorted = [...acts].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     const last = sorted[sorted.length - 1];
 
-    // Staff reply = may aiReply, o type is manual_reply, o type is message na walang note (echo)
-    const isStaffReply = last.type === "manual_reply" || 
-                         (last.aiReply && last.aiReply.trim() !== "") ||
-                         (last.type === "message" && (!last.note || last.note.trim() === ""));
+    // May aiReply = naka-reply na (Botcake, AI, o Staff echo)
+    // aiReply is NULL = customer message na hindi pa nare-reply
+    const hasReply = last.aiReply !== null && last.aiReply !== undefined;
+    const isManualReply = last.type === "manual_reply";
 
-    // Customer message = may note (yung text ng customer), walang aiReply
-    const isCustomerMsg = last.type === "message" && last.note && last.note.trim() !== "" && !last.aiReply;
-
-    if (isStaffReply) {
-      // Kami na naka-reply — waiting na for customer
-      return { 
-        label: "Waiting for Customer", 
-        color: C.blue, 
-        bg: C.blueBg, 
+    if (hasReply || isManualReply) {
+      return {
+        label: "Waiting for Customer",
+        color: C.blue,
+        bg: C.blueBg,
         noReplyFrom: last.createdAt,
-        repliedBy: "staff"
       };
     }
 
-    if (isCustomerMsg) {
-      // Customer nag-message — kailangan namin mag-reply
-      return { 
-        label: "Needs Our Reply", 
-        color: C.red, 
-        bg: C.redBg,
-        since: last.createdAt
-      };
-    }
-
-    return { label: "No Message Yet", color: C.muted, bg: "#F1F5F9" };
+    // aiReply is NULL = customer nag-message, hindi pa nare-reply
+    return {
+      label: "Needs Our Reply",
+      color: C.red,
+      bg: C.redBg,
+      since: last.createdAt,
+    };
   };
 
   const openPanel = (lead) => { setSelectedLead(lead); setReplyText(""); setSendResult(null); };
