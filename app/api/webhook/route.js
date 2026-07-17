@@ -33,14 +33,12 @@ export async function POST(request) {
 
   for (const entry of body.entry || []) {
 
-    // ─── MESSENGER MESSAGES ───────────────────────────────────────────────
     const event = entry.messaging?.[0];
     if (event) {
       const senderId = event.sender?.id;
       const messageText = event.message?.text;
       const isEcho = event.message?.is_echo;
 
-      // Echo = mensahe galing sa atin (staff reply) — i-log lang as human reply
       if (isEcho && senderId) {
         try {
           await prisma.activity.create({
@@ -51,18 +49,16 @@ export async function POST(request) {
               aiReply: messageText || "",
             },
           });
-
           await prisma.lead.update({
             where: { id: senderId },
             data: { lastHumanReply: new Date() },
           });
         } catch (err) {
-          console.error("Error saving human reply / updating lastHumanReply:", err);
+          console.error("Error saving human reply:", err);
         }
         continue;
       }
 
-      // Incoming message galing sa customer
       if (!isEcho && senderId && messageText) {
         const profile = await getMessengerProfile(senderId);
         const name = profile?.name
@@ -98,11 +94,10 @@ export async function POST(request) {
           console.error("Error saving activity:", err);
         }
 
-        console.log(`[webhook] Message received from ${name} (${senderId}) — logged, Botcake will handle reply.`);
+        console.log(`[webhook] Message from ${name} (${senderId})`);
       }
     }
 
-    // ─── FACEBOOK POST COMMENTS ───────────────────────────────────────────
     for (const change of entry.changes || []) {
       if (change.field === "feed" && change.value?.item === "comment") {
         const commentData = change.value;
@@ -138,3 +133,15 @@ export async function POST(request) {
                   type: "comment",
                   note: `Commented on "${postTitle}": ${commentText}`,
                 },
+              },
+            },
+          });
+        } catch (err) {
+          console.error("Error saving comment lead:", err);
+        }
+      }
+    }
+  }
+
+  return new Response("EVENT_RECEIVED", { status: 200 });
+}
