@@ -515,36 +515,39 @@ export default function Dashboard() {
 
     const sorted = [...acts].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
-    // Hanapin ang pinakahuli na customer message at pinakahuli na reply namin
-    let lastCustomerMsg = null;
-    let lastOurReply = null;
+    // Hanapin ang pinakahuli na CUSTOMER message at pinakahuli na REPLY NAMIN
+    // base sa createdAt — kung sinong huli, yun ang nagde-determine ng status
+    let lastCustomerTime = null;
+    let lastOurReplyTime = null;
+    let lastCustomerMsg  = null;
+    let lastOurReply     = null;
 
     for (const a of sorted) {
-      const isOurReply = a.type === "manual_reply" || 
+      const t = new Date(a.createdAt);
+      const isOurReply = a.type === "manual_reply" ||
                          (a.aiReply !== null && a.aiReply !== undefined && a.aiReply !== "");
       const isCustomer = !isOurReply && a.note && a.note.trim() !== "";
 
-      if (isCustomer) lastCustomerMsg = a;
-      if (isOurReply) lastOurReply = a;
+      if (isCustomer) {
+        if (!lastCustomerTime || t > lastCustomerTime) {
+          lastCustomerTime = t;
+          lastCustomerMsg  = a;
+        }
+      }
+      if (isOurReply) {
+        if (!lastOurReplyTime || t > lastOurReplyTime) {
+          lastOurReplyTime = t;
+          lastOurReply     = a;
+        }
+      }
     }
 
     if (!lastCustomerMsg && !lastOurReply) {
       return { label: "No Message Yet", color: C.muted, bg: "#F1F5F9" };
     }
 
-    // Kung may reply tayo AT yung reply natin ay AFTER ng last customer message
-    if (lastOurReply && lastCustomerMsg) {
-      const ourTime      = new Date(lastOurReply.createdAt);
-      const customerTime = new Date(lastCustomerMsg.createdAt);
-      if (ourTime >= customerTime) {
-        return {
-          label: "Waiting for Customer",
-          color: C.blue,
-          bg: C.blueBg,
-          noReplyFrom: lastOurReply.createdAt,
-        };
-      }
-      // Customer nag-message ulit after ng ating reply
+    // Kung ang pinakabago ay customer message — kailangan namin mag-reply
+    if (lastCustomerMsg && (!lastOurReply || lastCustomerTime > lastOurReplyTime)) {
       return {
         label: "Needs Our Reply",
         color: C.red,
@@ -553,22 +556,12 @@ export default function Dashboard() {
       };
     }
 
-    // May reply tayo pero walang customer message pa
-    if (lastOurReply && !lastCustomerMsg) {
-      return {
-        label: "Waiting for Customer",
-        color: C.blue,
-        bg: C.blueBg,
-        noReplyFrom: lastOurReply.createdAt,
-      };
-    }
-
-    // May customer message pero wala pang reply tayo
+    // Kung ang pinakabago ay reply namin — waiting for customer
     return {
-      label: "Needs Our Reply",
-      color: C.red,
-      bg: C.redBg,
-      since: lastCustomerMsg.createdAt,
+      label: "Waiting for Customer",
+      color: C.blue,
+      bg: C.blueBg,
+      noReplyFrom: lastOurReply ? lastOurReply.createdAt : null,
     };
   };
 
