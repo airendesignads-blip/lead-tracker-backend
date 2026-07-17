@@ -513,30 +513,62 @@ export default function Dashboard() {
     const acts = lead.activities || [];
     if (!acts.length) return { label: "No Message Yet", color: C.muted, bg: "#F1F5F9" };
 
-    // Sort by createdAt para sure na tama ang order
     const sorted = [...acts].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    const last = sorted[sorted.length - 1];
 
-    // May aiReply = naka-reply na (Botcake, AI, o Staff echo)
-    // aiReply is NULL = customer message na hindi pa nare-reply
-    const hasReply = last.aiReply !== null && last.aiReply !== undefined;
-    const isManualReply = last.type === "manual_reply";
+    // Hanapin ang pinakahuli na customer message at pinakahuli na reply namin
+    let lastCustomerMsg = null;
+    let lastOurReply = null;
 
-    if (hasReply || isManualReply) {
+    for (const a of sorted) {
+      const isOurReply = a.type === "manual_reply" || 
+                         (a.aiReply !== null && a.aiReply !== undefined && a.aiReply !== "");
+      const isCustomer = !isOurReply && a.note && a.note.trim() !== "";
+
+      if (isCustomer) lastCustomerMsg = a;
+      if (isOurReply) lastOurReply = a;
+    }
+
+    if (!lastCustomerMsg && !lastOurReply) {
+      return { label: "No Message Yet", color: C.muted, bg: "#F1F5F9" };
+    }
+
+    // Kung may reply tayo AT yung reply natin ay AFTER ng last customer message
+    if (lastOurReply && lastCustomerMsg) {
+      const ourTime      = new Date(lastOurReply.createdAt);
+      const customerTime = new Date(lastCustomerMsg.createdAt);
+      if (ourTime >= customerTime) {
+        return {
+          label: "Waiting for Customer",
+          color: C.blue,
+          bg: C.blueBg,
+          noReplyFrom: lastOurReply.createdAt,
+        };
+      }
+      // Customer nag-message ulit after ng ating reply
+      return {
+        label: "Needs Our Reply",
+        color: C.red,
+        bg: C.redBg,
+        since: lastCustomerMsg.createdAt,
+      };
+    }
+
+    // May reply tayo pero walang customer message pa
+    if (lastOurReply && !lastCustomerMsg) {
       return {
         label: "Waiting for Customer",
         color: C.blue,
         bg: C.blueBg,
-        noReplyFrom: last.createdAt,
+        noReplyFrom: lastOurReply.createdAt,
       };
     }
 
-    // aiReply is NULL = customer nag-message, hindi pa nare-reply
+    // May customer message pero wala pang reply tayo
     return {
       label: "Needs Our Reply",
       color: C.red,
       bg: C.redBg,
-      since: last.createdAt,
+      since: lastCustomerMsg.createdAt,
     };
   };
 
