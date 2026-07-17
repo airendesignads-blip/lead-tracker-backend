@@ -27,14 +27,12 @@ const dot = (color) => (
 
 const PAYMENT_MODES = ["Cash", "GCash", "BDO", "PayPal", "PayMaya", "Bank Transfer"];
 
-// ── GCASH RECIPIENTS (for the "Ipinadala kay" dropdown) ───────────────────────
 const GCASH_RECIPIENTS = [
   { name: "AIDLYN NGUJO",    number: "0917 620 6260" },
   { name: "SHIBA MAY NGUJO", number: "0917 580 8610" },
   { name: "ESMECA AN NGUJO", number: "0917 156 7536" },
 ];
 
-// ── DEFAULT SAVED REPLIES ─────────────────────────────────────────────────────
 const DEFAULT_REPLIES = [
   { id:"1", title:"Welcome",        text:"Salamat sa iyong message! Sandali lang ha. 😊" },
   { id:"2", title:"Pricing UV DTF", text:"Terms: ✓400 Pesos for 10 inches x 22 inches ✓For UV DTF, dapat ready to print na ang file bago e-send sa email address ng Ai-ren Design Ads. ✓No White Background sa mismong file.\n\nVISIT US: MC Briones St. Hiway Guizo 6014 Mandaue, Philippines (Beside Korean Surplus)\nContact us: (032) 318-3089 | 09175808616\nEmail: airendesignads@gmail.com\nFB PAGE: https://www.facebook.com/airengarments\n\n50% Downpayment Full Payment Upon Pick-Up or Before Delivery / Shipment\nNationwide Shipping Charge to Client" },
@@ -60,7 +58,6 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
   const [fbMessages,    setFbMessages]    = useState([]);
   const [fbLoading,     setFbLoading]     = useState(false);
 
-  // Load saved replies from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem("crm_saved_replies");
@@ -68,7 +65,6 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
     } catch { setSavedReplies(DEFAULT_REPLIES); }
   }, []);
 
-  // Fetch actual messages from Facebook when lead changes
   useEffect(() => {
     if (!selectedLead) return;
     setFbMessages([]); setFbLoading(true);
@@ -141,7 +137,6 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
         style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:40 }} />
       <div style={{ position:"fixed", top:0, right:0, bottom:0, width:440, background:"#fff", zIndex:50, display:"flex", flexDirection:"column", boxShadow:"-4px 0 32px rgba(0,0,0,0.12)" }}>
 
-        {/* Header */}
         <div style={{ padding:"14px 18px", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", gap:10, background:"#F8FAFC", flexShrink:0 }}>
           <div style={{ width:38, height:38, borderRadius:"50%", background:"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:700, color:C.accentText, flexShrink:0 }}>
             {(selectedLead.name||"?")[0].toUpperCase()}
@@ -164,7 +159,6 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
             style={{ padding:"5px 9px", borderRadius:7, border:"1.5px solid #E2E8F0", background:"#fff", color:C.muted, fontSize:12, cursor:"pointer", fontWeight:700 }}>✕</button>
         </div>
 
-        {/* Messages — fetched from Facebook Graph API */}
         <div style={{ flex:1, overflowY:"auto", padding:"14px 18px", display:"flex", flexDirection:"column", gap:10, background:"#F8FAFC" }}>
           {fbLoading ? (
             <div style={{ textAlign:"center", color:C.muted, fontSize:13, marginTop:40 }}>
@@ -177,10 +171,7 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
             const isPage = msg.isPage;
             const time   = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
             const date   = msg.createdAt ? new Date(msg.createdAt).toLocaleDateString([], { month:"short", day:"numeric" }) : "";
-            // Show date separator
-            const prevDate = i > 0 && fbMessages[i-1].createdAt
-              ? new Date(fbMessages[i-1].createdAt).toLocaleDateString()
-              : null;
+            const prevDate = i > 0 && fbMessages[i-1].createdAt ? new Date(fbMessages[i-1].createdAt).toLocaleDateString() : null;
             const curDate  = msg.createdAt ? new Date(msg.createdAt).toLocaleDateString() : null;
             const showDate = i === 0 || prevDate !== curDate;
             return (
@@ -193,22 +184,18 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
                   </div>
                 )}
                 <div style={{ display:"flex", flexDirection:"column", alignItems:isPage?"flex-end":"flex-start" }}>
-                  {/* Attachment thumbnails */}
                   {msg.attachments?.length > 0 && msg.attachments.map((att, ai) => (
                     <div key={ai} style={{ maxWidth:"82%", marginBottom:4, padding:"8px 10px", borderRadius:12, background:isPage?C.accent:"#fff", border:isPage?"none":"1px solid #E2E8F0", color:isPage?"#fff":C.muted, fontSize:12 }}>
                       📎 {att.name || att.type || "Attachment"}
                     </div>
                   ))}
-                  {/* Message text */}
                   {msg.text && (
                     <div style={{ maxWidth:"82%", padding:"9px 13px", borderRadius:isPage?"16px 16px 4px 16px":"16px 16px 16px 4px", background:isPage?C.accent:"#fff", color:isPage?"#fff":"#1E293B", border:isPage?"none":"1px solid #E2E8F0", fontSize:13, lineHeight:1.5, whiteSpace:"pre-wrap" }}>
                       {msg.text}
                     </div>
                   )}
                   <div style={{ fontSize:10, color:C.muted, marginTop:2, display:"flex", alignItems:"center", gap:3 }}>
-                    {isPage
-                      ? <><span style={{ color:C.green }}>✓</span> {msg.from} · {time}</>
-                      : <>{msg.from} · {time}</>}
+                    {isPage ? <><span style={{ color:C.green }}>✓</span> {msg.from} · {time}</> : <>{msg.from} · {time}</>}
                   </div>
                 </div>
               </div>
@@ -217,7 +204,6 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
           <div ref={chatEndRef} />
         </div>
 
-        {/* Saved Replies Panel */}
         {showSavedReplies && (
           <div style={{ borderTop:"1px solid #E2E8F0", background:"#fff", maxHeight:300, display:"flex", flexDirection:"column", flexShrink:0 }}>
             <div style={{ padding:"10px 16px", borderBottom:"1px solid #F1F5F9", display:"flex", alignItems:"center", gap:8 }}>
@@ -263,14 +249,11 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
           </div>
         )}
 
-        {/* Reply box */}
         <div style={{ padding:"12px 16px", borderTop:"1px solid #E2E8F0", background:"#fff", flexShrink:0 }}>
           {sendResult   && <div style={{ fontSize:12, color:sendResult.ok?C.green:C.red,    marginBottom:6, fontWeight:600 }}>{sendResult.msg}</div>}
           {uploadStatus && <div style={{ fontSize:12, color:uploadStatus.ok?C.green:C.red,  marginBottom:6, fontWeight:600 }}>{uploadStatus.msg}</div>}
 
-          {/* Toolbar */}
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-            {/* + Attach button */}
             <div style={{ position:"relative" }}>
               <button onClick={() => { setShowAttachMenu(!showAttachMenu); setShowSavedReplies(false); }} disabled={uploading}
                 style={{ width:34, height:34, borderRadius:8, border:"1.5px solid #E2E8F0", background:showAttachMenu?"#F1F5F9":"#fff", color:uploading?C.muted:"#0F172A", fontSize:20, cursor:uploading?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}
@@ -299,7 +282,6 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
               )}
             </div>
 
-            {/* Saved replies toggle */}
             <button onClick={() => { setShowSavedReplies(!showSavedReplies); setShowAttachMenu(false); setShowAddForm(false); }}
               style={{ padding:"6px 12px", borderRadius:7, border:`1.5px solid ${showSavedReplies?C.accent:"#E2E8F0"}`, background:showSavedReplies?C.accentBg:"#fff", color:showSavedReplies?C.accentText:C.muted, fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:4, height:34 }}>
               💬 Saved Replies {showSavedReplies ? "▲" : "▼"}
@@ -324,7 +306,6 @@ function ConversationPanel({ selectedLead, replyText, setReplyText, sending, sen
   );
 }
 
-// ── PAYMENT MODAL ─────────────────────────────────────────────────────────
 function PaymentModal({ lead, onClose, onSaved }) {
   const [amount, setAmount] = useState("");
   const [mode,   setMode]   = useState(PAYMENT_MODES[0]);
@@ -418,14 +399,15 @@ export default function Dashboard() {
   const [importing,      setImporting]      = useState(false);
   const [importResult,   setImportResult]   = useState(null);
   const [search,         setSearch]         = useState("");
-  // Conversation panel
   const [selectedLead,   setSelectedLead]   = useState(null);
   const [replyText,      setReplyText]       = useState("");
   const [sending,        setSending]         = useState(false);
   const [sendResult,     setSendResult]      = useState(null);
-  // Payment modal
   const [paymentLead,    setPaymentLead]     = useState(null);
   const [paymentToast,   setPaymentToast]    = useState(null);
+  // ── NEW: rename state ─────────────────────────────────────────────────
+  const [renamingId,     setRenamingId]      = useState(null);
+  const [renameValue,    setRenameValue]     = useState("");
   const chatEndRef = useRef(null);
 
   const fetchLeads = () => {
@@ -435,7 +417,6 @@ export default function Dashboard() {
         setLeads(data);
         setLoading(false);
         setLastUpdated(new Date());
-        // Refresh selected lead conversation
         if (selectedLead) {
           const updated = data.find((l) => l.id === selectedLead.id);
           if (updated) setSelectedLead(updated);
@@ -451,8 +432,6 @@ export default function Dashboard() {
     return () => clearInterval(iv);
   }, []);
 
-  // Walang auto-scroll — manual lang ang user kung kailan mag-scroll
-
   const importComments = async () => {
     setImporting(true); setImportResult(null);
     try {
@@ -464,7 +443,6 @@ export default function Dashboard() {
     finally   { setImporting(false); }
   };
 
-  // Send reply from CRM directly to Messenger
   const sendReply = async () => {
     if (!replyText.trim() || !selectedLead) return;
     setSending(true); setSendResult(null);
@@ -475,7 +453,6 @@ export default function Dashboard() {
         body: JSON.stringify({ leadId: selectedLead.id, message: replyText.trim() }),
       });
       const data = await res.json();
-      // Outside 24h window — i-redirect sa Messenger
       if (data.outsideWindow) {
         setSendResult({ ok: false, msg: "⏰ Luma na ang conversation. Binubuksan ang Messenger..." });
         setTimeout(() => {
@@ -496,6 +473,25 @@ export default function Dashboard() {
     } finally {
       setSending(false);
       setTimeout(() => setSendResult(null), 3000);
+    }
+  };
+
+  // ── RENAME FUNCTION ───────────────────────────────────────────────────
+  const saveName = async (leadId) => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) { setRenamingId(null); return; }
+    try {
+      await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      fetchLeads();
+    } catch (err) {
+      console.error("Rename error:", err);
+    } finally {
+      setRenamingId(null);
+      setRenameValue("");
     }
   };
 
@@ -520,11 +516,8 @@ export default function Dashboard() {
     if (!last.aiReply) return { label: "Pending Reply", color: C.red, bg: C.redBg };
     const hasNew = acts.some((a) => !a.aiReply && new Date(a.createdAt) > new Date(last.createdAt));
     if (hasNew) return { label: "New Message!", color: C.amber, bg: C.amberBg };
-    // Kung galing sa "Send" button ng CRM (manual_reply), o galing sa human agent
-    // na direktang sumagot sa Messenger app mismo (echo event, walang bagong
-    // customer note kasama) — pareho itong tunay na tao ang sumagot.
     const isAdminReply = last.type === "manual_reply" || (last.type === "message" && !last.note);
-    const noReplyFrom = last.createdAt; // simula kailan tahimik na ang customer
+    const noReplyFrom = last.createdAt;
     if (isAdminReply) return { label: "Replied by Admin", color: C.blue, bg: C.blueBg, noReplyFrom };
     return { label: "Replied by AI", color: C.green, bg: C.greenBg, noReplyFrom };
   };
@@ -596,11 +589,9 @@ export default function Dashboard() {
     </div>
   );
 
-  // ── RENDER ────────────────────────────────────────────────────────────
   return (
     <div style={{ display:"flex", minHeight:"100vh", fontFamily:"'Inter','Segoe UI',sans-serif", background:C.bg }}>
 
-      {/* SIDEBAR */}
       <aside style={{ width:200, background:C.bg, borderRight:`1px solid ${C.surface}`, padding:"20px 14px", display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
         <div style={{ padding:"0 4px 16px", borderBottom:`1px solid ${C.surface}`, marginBottom:8 }}>
           <img src="/logo.png" alt="Ai-Ren Design Ads" onError={(e) => { e.target.style.display="none"; document.getElementById("sb-logo-fb").style.display="block"; }} style={{ width:"100%", maxHeight:56, objectFit:"contain", objectPosition:"left" }} />
@@ -619,10 +610,8 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* MAIN */}
       <main style={{ flex:1, background:C.pageBg, overflowX:"auto" }}>
 
-        {/* TOP BAR */}
         <div style={{ background:"#fff", borderBottom:"1px solid #E2E8F0", padding:"14px 28px", display:"flex", alignItems:"center", gap:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:16, flexShrink:0 }}>
             <img src="/logo.png" alt="Ai-Ren Design Ads" onError={(e) => { e.target.style.display="none"; document.getElementById("tb-logo-fb").style.display="flex"; }} style={{ height:60, width:"auto", objectFit:"contain" }} />
@@ -666,7 +655,6 @@ export default function Dashboard() {
           <div style={{ padding:"10px 28px", fontSize:13, borderBottom:"1px solid #E2E8F0", background:"#F0FDF4", color:C.green }}>{paymentToast}</div>
         )}
 
-        {/* STATS */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, padding:"20px 28px" }}>
           <StatCard label="Total Leads"   value={leads.length}          sub="↑ All time"      subColor="#10B981" />
           <StatCard label="Messenger"     value={messengerLeads.length} sub="⏳ Active"        subColor={C.amber} />
@@ -674,19 +662,15 @@ export default function Dashboard() {
           <StatCard label="Pending Reply" value={pendingCount}           sub="🔥 Needs action" subColor={C.red}   />
         </div>
 
-        {/* TABLE */}
         <div style={{ padding:"0 28px 28px" }}>
           <div style={{ background:"#fff", borderRadius:"12px 12px 0 0", border:"1px solid #E2E8F0", borderBottom:"none", padding:"12px 20px", display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
             <div style={{ position:"relative", flex:1, maxWidth:280 }}>
               <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:12 }}>🔍</span>
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search leads…" style={{ width:"100%", padding:"8px 12px 8px 30px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13, fontFamily:"inherit", outline:"none", color:"#0F172A" }} />
             </div>
-
-            {/* Tip banner */}
             <div style={{ fontSize:11, color:C.accentText, background:C.accentBg, padding:"5px 10px", borderRadius:7, fontWeight:600 }}>
               💬 I-click ang name ng lead para mag-reply dito sa CRM
             </div>
-
             <div style={{ display:"flex", gap:4, marginLeft:"auto", flexWrap:"wrap" }}>
               {[
                 { id:"messenger",     label:"💬 Messenger",  count:messengerLeads.length  },
@@ -724,18 +708,36 @@ export default function Dashboard() {
                     const isDone     = doneStages.includes(lead.stage);
                     const heatCfg    = lead.heat==="hot" ? {bg:C.redBg,color:C.red,icon:"🔥"} : lead.heat==="cold" ? {bg:C.blueBg,color:C.blue,icon:"🧊"} : {bg:C.amberBg,color:C.amber,icon:"🔥"};
                     const isPending  = status.label === "Pending Reply" || status.label === "New Message!";
+                    const isRenaming = renamingId === lead.id;
                     return (
                       <tr key={lead.id} style={{ borderBottom:"1px solid #F1F5F9", background:isPending?"#FFFBEB":"#fff", transition:"background .1s" }}>
                         <td style={{ padding:"12px 16px" }}>
-                          <span
-                            onClick={() => openPanel(lead)}
-                            style={{ fontWeight:700, color:C.blue, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
-                            title="I-click para mag-reply"
-                          >
-                            {isPending && <span style={{ width:7, height:7, borderRadius:"50%", background:C.red, display:"inline-block", animation:"livePulse 1.5s infinite" }} />}
-                            {lead.name}
-                            <span style={{ fontSize:10, background:C.accentBg, color:C.accentText, padding:"1px 6px", borderRadius:4, fontWeight:600 }}>Reply</span>
-                          </span>
+                          {isRenaming ? (
+                            <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                              <input
+                                autoFocus
+                                value={renameValue}
+                                onChange={e => setRenameValue(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === "Enter") saveName(lead.id);
+                                  if (e.key === "Escape") { setRenamingId(null); setRenameValue(""); }
+                                }}
+                                style={{ padding:"5px 8px", borderRadius:6, border:`1.5px solid ${C.accent}`, fontSize:13, fontFamily:"inherit", outline:"none", width:160, color:"#0F172A" }}
+                              />
+                              <button onClick={() => saveName(lead.id)} style={{ padding:"4px 8px", borderRadius:6, border:"none", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>✓</button>
+                              <button onClick={() => { setRenamingId(null); setRenameValue(""); }} style={{ padding:"4px 6px", borderRadius:6, border:"1.5px solid #E2E8F0", background:"#fff", color:C.muted, fontSize:11, cursor:"pointer" }}>✕</button>
+                            </div>
+                          ) : (
+                            <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              {isPending && <span style={{ width:7, height:7, borderRadius:"50%", background:C.red, display:"inline-block", animation:"livePulse 1.5s infinite", flexShrink:0 }} />}
+                              <span onClick={() => openPanel(lead)} style={{ fontWeight:700, color:C.blue, cursor:"pointer" }}>{lead.name}</span>
+                              <span onClick={() => openPanel(lead)} style={{ fontSize:10, background:C.accentBg, color:C.accentText, padding:"1px 6px", borderRadius:4, fontWeight:600, cursor:"pointer" }}>Reply</span>
+                              <button
+                                onClick={() => { setRenamingId(lead.id); setRenameValue(lead.name); }}
+                                style={{ border:"none", background:"none", cursor:"pointer", fontSize:11, color:"#94A3B8", padding:0, flexShrink:0 }}
+                                title="I-rename ang lead">✏️</button>
+                            </span>
+                          )}
                         </td>
                         <td style={{ padding:"12px 16px", color:C.muted, fontSize:13 }}>{lead.email||"—"}</td>
                         <td style={{ padding:"12px 16px" }}>{pill(C.blueBg, C.blue, <>📘 {lead.source}</>)}</td>
@@ -780,7 +782,6 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* CONVERSATION PANEL */}
       <ConversationPanel
         selectedLead={selectedLead}
         replyText={replyText}
@@ -793,7 +794,6 @@ export default function Dashboard() {
         getReplyStatus={getReplyStatus}
       />
 
-      {/* PAYMENT MODAL */}
       {paymentLead && (
         <PaymentModal
           lead={paymentLead}
