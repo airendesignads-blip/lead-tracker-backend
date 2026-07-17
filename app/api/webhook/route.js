@@ -20,7 +20,6 @@ export async function GET(request) {
   const mode = searchParams.get("hub.mode");
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
-
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
     return new Response(challenge, { status: 200 });
   }
@@ -35,30 +34,51 @@ export async function POST(request) {
 
     const event = entry.messaging?.[0];
     if (event) {
-      const senderId = event.sender?.id;
+      const senderId   = event.sender?.id;
+      const recipientId = event.recipient?.id;
       const messageText = event.message?.text;
-      const isEcho = event.message?.is_echo;
+      const isEcho     = event.message?.is_echo;
 
-      if (isEcho && senderId) {
+      // Echo = reply galing sa amin (staff o Botcake) — i-save ang aiReply
+      if (isEcho && messageText) {
+        // ang leadId ay yung recipient (yung customer) hindi yung sender (page)
+        const leadId = recipientId || senderId;
         try {
-          await prisma.activity.create({
-            data: {
-              leadId: senderId,
-              type: "message",
-              note: "",
-              aiReply: messageText || "",
-            },
+          // I-update ang pinakabagong activity ng lead na ito na walang aiReply pa
+          const lastActivity = await prisma.activity.findFirst({
+            where: { leadId, aiReply: null },
+            orderBy: { createdAt: "desc" },
           });
+
+          if (lastActivity) {
+            await prisma.activity.update({
+              where: { id: lastActivity.id },
+              data: { aiReply: messageText },
+            });
+          } else {
+            // Walang existing activity — mag-create ng bagong entry
+            await prisma.activity.create({
+              data: {
+                leadId,
+                type: "message",
+                note: "",
+                aiReply: messageText,
+              },
+            });
+          }
+
           await prisma.lead.update({
-            where: { id: senderId },
+            where: { id: leadId },
             data: { lastHumanReply: new Date() },
-          });
+          }).catch(() => {});
+
         } catch (err) {
-          console.error("Error saving human reply:", err);
+          console.error("Error saving echo reply:", err);
         }
         continue;
       }
 
+      // Incoming message galing sa customer
       if (!isEcho && senderId && messageText) {
         const profile = await getMessengerProfile(senderId);
         const name = profile?.name
@@ -84,11 +104,7 @@ export async function POST(request) {
 
         try {
           await prisma.activity.create({
-            data: {
-              leadId: senderId,
-              type: "message",
-              note: messageText,
-            },
+            data: { leadId: senderId, type: "message", note: messageText },
           });
         } catch (err) {
           console.error("Error saving activity:", err);
@@ -98,18 +114,19 @@ export async function POST(request) {
       }
     }
 
+    // Facebook Post Comments
     for (const change of entry.changes || []) {
       if (change.field === "feed" && change.value?.item === "comment") {
-        const commentData = change.value;
-        const commenterId = commentData.sender_id?.toString();
-        const commenterName = commentData.sender_name || "Facebook Commenter";
-        const commentText = commentData.message || "";
-        const postId = commentData.post_id || "";
+        const commentData    = change.value;
+        const commenterId    = commentData.sender_id?.toString();
+        const commenterName  = commentData.sender_name || "Facebook Commenter";
+        const commentText    = commentData.message || "";
+        const postId         = commentData.post_id || "";
 
         if (!commenterId || !commentText) continue;
 
         const postTitle = await getPostTitle(postId);
-        const leadId = `fb_comment_${commenterId}`;
+        const leadId    = `fb_comment_${commenterId}`;
 
         try {
           await prisma.lead.upsert({
@@ -118,15 +135,15 @@ export async function POST(request) {
               updatedAt: new Date(),
               stage: "Bagong Lead",
               comment: commentText,
-              postId: postId,
-              postTitle: postTitle,
+              postId,
+              postTitle,
             },
             create: {
               id: leadId,
               name: commenterName,
               source: "facebook",
-              postId: postId,
-              postTitle: postTitle,
+              postId,
+              postTitle,
               comment: commentText,
               activities: {
                 create: {
