@@ -62,17 +62,19 @@ export async function POST(request) {
         continue;
       }
 
-      // Incoming message galing sa customer — i-save sa DB, Botcake na ang mag-reply
+      // Incoming message galing sa customer
       if (!isEcho && senderId && messageText) {
         const profile = await getMessengerProfile(senderId);
-        const name = profile
-          ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
-          : "Facebook Lead";
+        const name = profile?.name
+          || (profile?.first_name || profile?.last_name
+              ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
+              : null)
+          || "Facebook User";
 
         try {
           await prisma.lead.upsert({
             where: { id: senderId },
-            update: { updatedAt: new Date(), stage: "Bagong Lead" },
+            update: { updatedAt: new Date(), stage: "Bagong Lead", name },
             create: {
               id: senderId,
               name,
@@ -84,22 +86,19 @@ export async function POST(request) {
           console.error("Error saving lead:", err);
         }
 
-        // I-log ang message sa activity — walang aiReply kasi Botcake na ang bahala
         try {
           await prisma.activity.create({
             data: {
               leadId: senderId,
               type: "message",
               note: messageText,
-              // 🤖 Botcake ang mag-re-reply — hindi na tayo sumasagot dito
             },
           });
         } catch (err) {
           console.error("Error saving activity:", err);
         }
 
-        // ✅ Walang Groq reply — Botcake na ang bahala sa customer
-        console.log(`[webhook] Message received from ${senderId} — logged, Botcake will handle reply.`);
+        console.log(`[webhook] Message received from ${name} (${senderId}) — logged, Botcake will handle reply.`);
       }
     }
 
@@ -139,15 +138,3 @@ export async function POST(request) {
                   type: "comment",
                   note: `Commented on "${postTitle}": ${commentText}`,
                 },
-              },
-            },
-          });
-        } catch (err) {
-          console.error("Error saving comment lead:", err);
-        }
-      }
-    }
-  }
-
-  return new Response("EVENT_RECEIVED", { status: 200 });
-}
