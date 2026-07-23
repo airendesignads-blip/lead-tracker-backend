@@ -2,6 +2,7 @@ import { getMessengerProfile } from "@/lib/facebook";
 import prisma from "@/lib/prisma";
 
 const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL; // https://airen108.app.n8n.cloud/webhook/messenger
 
 async function getPostTitle(postId) {
   try {
@@ -34,17 +35,15 @@ export async function POST(request) {
 
     const event = entry.messaging?.[0];
     if (event) {
-      const senderId   = event.sender?.id;
+      const senderId    = event.sender?.id;
       const recipientId = event.recipient?.id;
       const messageText = event.message?.text;
-      const isEcho     = event.message?.is_echo;
+      const isEcho      = event.message?.is_echo;
 
       // Echo = reply galing sa amin (staff o Botcake) — i-save ang aiReply
       if (isEcho && messageText) {
-        // ang leadId ay yung recipient (yung customer) hindi yung sender (page)
         const leadId = recipientId || senderId;
         try {
-          // I-update ang pinakabagong activity ng lead na ito na walang aiReply pa
           const lastActivity = await prisma.activity.findFirst({
             where: { leadId, aiReply: null },
             orderBy: { createdAt: "desc" },
@@ -56,7 +55,6 @@ export async function POST(request) {
               data: { aiReply: messageText },
             });
           } else {
-            // Walang existing activity — mag-create ng bagong entry
             await prisma.activity.create({
               data: {
                 leadId,
@@ -110,6 +108,19 @@ export async function POST(request) {
           console.error("Error saving activity:", err);
         }
 
+        // ✅ FORWARD TO N8N → CLAUDE WILL REPLY
+        if (N8N_WEBHOOK_URL) {
+          fetch(N8N_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              senderId,
+              name,
+              message: messageText,
+            }),
+          }).catch((err) => console.error("Error forwarding to n8n:", err));
+        }
+
         console.log(`[webhook] Message from ${name} (${senderId})`);
       }
     }
@@ -117,11 +128,11 @@ export async function POST(request) {
     // Facebook Post Comments
     for (const change of entry.changes || []) {
       if (change.field === "feed" && change.value?.item === "comment") {
-        const commentData    = change.value;
-        const commenterId    = commentData.sender_id?.toString();
-        const commenterName  = commentData.sender_name || "Facebook Commenter";
-        const commentText    = commentData.message || "";
-        const postId         = commentData.post_id || "";
+        const commentData   = change.value;
+        const commenterId   = commentData.sender_id?.toString();
+        const commenterName = commentData.sender_name || "Facebook Commenter";
+        const commentText   = commentData.message || "";
+        const postId        = commentData.post_id || "";
 
         if (!commenterId || !commentText) continue;
 
